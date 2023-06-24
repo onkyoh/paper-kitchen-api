@@ -11,8 +11,6 @@ import {
     makeShareUrl,
 } from '../controllers/recipeController.js'
 
-//auth middleware
-
 const router = express.Router()
 
 router.route('/').get(getRecipes).post(createRecipe)
