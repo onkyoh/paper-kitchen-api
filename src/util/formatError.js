@@ -4,7 +4,7 @@ const formatError = (status, msg) => {
         error.statusCode = 500
         throw error
     } else {
-        let error = new Error(msg)
+        let error = new Error(msg.replace(/["\\]/g, ''))
         error.statusCode = status
         throw error
     }
