@@ -236,7 +236,7 @@ export const joinGroceryList = async (req, res) => {
         },
     })
 
-    return res.status(201).send('Succesfully joined')
+    return res.status(201).send('Successfully joined')
 }
 
 export const updateShare = async (req, res) => {
@@ -251,7 +251,7 @@ export const updateShare = async (req, res) => {
     const isOwner = await prisma.groceryList.findFirst({
         where: {
             id: parseInt(id),
-            userId: req.userId,
+            ownerId: req.userId,
         },
     })
 
@@ -259,7 +259,7 @@ export const updateShare = async (req, res) => {
         formatError(403, 'Unauthorized')
     }
 
-    const updatedPermission = await prisma.userGroceryList.update({
+    const updatedPermission = await prisma.userGroceryList.updateMany({
         where: {
             groceryListId: parseInt(id),
             userId: req.body.userId,
@@ -292,9 +292,9 @@ export const removeShare = async (req, res) => {
         formatError(403, 'Unauthorized')
     }
 
-    await prisma.userGroceryList.delete({
+    await prisma.userGroceryList.deleteMany({
         where: {
-            id: parseInt(id),
+            groceryListId: parseInt(id),
             userId: req.body.userId,
         },
     })

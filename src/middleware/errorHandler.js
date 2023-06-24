@@ -1,5 +1,4 @@
 const errorHandler = (err, req, res, next) => {
-    console.log(err)
     if (err.statusCode && err.message) {
         return res.status(err.statusCode).send({ msg: err.message })
     } else {

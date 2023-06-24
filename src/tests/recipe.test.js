@@ -1,8 +1,6 @@
 import supertest from 'supertest'
 import app from '../app.js'
 import prisma from '../config/db.js'
-import { genSalt, hash } from 'bcrypt'
-import generateToken from '../util/generateToken.js'
 
 const request = supertest.agent(app)
 
@@ -10,7 +8,7 @@ describe('/recipes', () => {
     beforeAll(async () => {
         const newUser = {
             name: 'John Doe',
-            username: 'johndoe',
+            username: 'recipeTest',
             password: 'password123',
         }
 
@@ -20,7 +18,15 @@ describe('/recipes', () => {
     afterAll(async () => {
         await prisma.userRecipe.deleteMany()
         await prisma.recipe.deleteMany()
-        await prisma.user.deleteMany()
+        await prisma.user.deleteMany({
+            where: {
+                OR: [
+                    { username: 'recipeTest' },
+                    { username: 'recipeShareTest' },
+                ],
+            },
+        })
+
         await prisma.$disconnect()
     })
 
@@ -181,7 +187,7 @@ describe('/recipes', () => {
                     .post('/api/users/register')
                     .send({
                         name: 'Test User',
-                        username: 'testuser',
+                        username: 'recipeShareTest',
                         password: 'password123',
                     })
 

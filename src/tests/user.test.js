@@ -1,28 +1,28 @@
 import supertest from 'supertest'
 import app from '../app.js'
 import prisma from '../config/db.js'
-import { hash, genSalt } from 'bcrypt'
 
 const request = supertest(app)
 
 describe('/users', () => {
     afterAll(async () => {
+        await prisma.user.deleteMany({
+            where: {
+                username: 'testuser',
+            },
+        })
         await prisma.$disconnect()
     })
 
-    afterEach(async () => {
-        await prisma.user.deleteMany()
-    })
-
     describe('POST', () => {
+        const userData = {
+            username: 'testuser',
+            password: 'testpassword',
+            name: 'Test User',
+        }
+
         describe('/register', () => {
             test('should register a new user and set access token cookie', async () => {
-                const userData = {
-                    username: 'testuser',
-                    password: 'testpassword',
-                    name: 'Test User',
-                }
-
                 const response = await request
                     .post('/api/users/register')
                     .send(userData)
@@ -46,26 +46,9 @@ describe('/users', () => {
             })
 
             test('should return an error when registering with an existing username', async () => {
-                const salt = await genSalt(10)
-                const hashedPassword = await hash('existingpassword', salt)
-
-                const existingUser = {
-                    username: 'existinguser',
-                    password: 'existingpassword',
-                    name: 'Existing User',
-                }
-
-                await prisma.user.create({
-                    data: { ...existingUser, password: hashedPassword },
-                })
-
                 const response = await request
                     .post('/api/users/register')
-                    .send({
-                        username: existingUser.username,
-                        password: 'newpassword',
-                        name: 'New User',
-                    })
+                    .send(userData)
 
                 expect(response.status).toBe(409)
                 expect(response.body).toEqual(
@@ -78,22 +61,9 @@ describe('/users', () => {
 
         describe('/login', () => {
             test('should log in an existing user and set access token cookie', async () => {
-                const salt = await genSalt(10)
-                const hashedPassword = await hash('existingpassword', salt)
-
-                const existingUser = {
-                    username: 'existinguser',
-                    password: 'existingpassword',
-                    name: 'Existing User',
-                }
-
-                await prisma.user.create({
-                    data: { ...existingUser, password: hashedPassword },
-                })
-
                 const response = await request.post('/api/users/login').send({
-                    username: existingUser.username,
-                    password: existingUser.password,
+                    username: userData.username,
+                    password: userData.password,
                 })
 
                 const cookies = response.headers['set-cookie']
@@ -108,28 +78,15 @@ describe('/users', () => {
                 expect(response.body).toEqual(
                     expect.objectContaining({
                         id: expect.any(Number),
-                        username: existingUser.username,
-                        name: existingUser.name,
+                        username: userData.username,
+                        name: userData.name,
                     })
                 )
             })
 
             test('should return an error when logging in with the wrong password', async () => {
-                const salt = await genSalt(10)
-                const hashedPassword = await hash('existingpassword', salt)
-
-                const existingUser = {
-                    username: 'existinguser',
-                    password: 'existingpassword',
-                    name: 'Existing User',
-                }
-
-                await prisma.user.create({
-                    data: { ...existingUser, password: hashedPassword },
-                })
-
                 const response = await request.post('/api/users/login').send({
-                    username: existingUser.username,
+                    username: userData.username,
                     password: 'wrongpassword',
                 })
 

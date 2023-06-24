@@ -19,7 +19,7 @@ router
     .route('/:id/share')
     .put(updateShare)
     .delete(removeShare)
-    .get(makeShareUrl)
+    .post(makeShareUrl)
 router.route('/join/:url').post(joinGroceryList)
 
 export default router
