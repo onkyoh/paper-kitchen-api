@@ -19,7 +19,7 @@ const app = express()
 
 app.use(
     cors({
-        origin: ['http://127.0.0.1:5173'],
+        origin: ['http://127.0.0.1:5173', 'https://paperkitchen.ca'],
         credentials: true,
     })
 )
@@ -27,6 +27,8 @@ app.use(helmet())
 app.use(cookieParser())
 app.use(express.json())
 //routes
+
+console.log(process.env.DATABASE_URL)
 
 app.use('/api/users', userRouter)
 app.use('/api/recipes', protect, recipeRouter)
