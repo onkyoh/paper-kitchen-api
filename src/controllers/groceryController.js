@@ -6,9 +6,9 @@ import {
 } from '../validations/groceryValidation.js'
 import {
     updateShareSchema,
-    shareUrlSchema,
     createListSchema,
     removeShareSchema,
+    makeShareUrlSchema,
 } from '../validations/schemas/sharedSchemas.js'
 import formatError from '../util/formatError.js'
 import generateToken from '../util/generateToken.js'
@@ -148,19 +148,23 @@ export const deleteGroceryList = async (req, res) => {
 }
 
 export const makeShareUrl = async (req, res) => {
-    const { error } = shareUrlSchema.validate({ ...req.body, ...req.params })
+    const { error } = makeShareUrlSchema.validate({
+        ...req.body,
+        ...req.params,
+    })
 
     if (error) {
         formatError(400, error.details[0].message)
     }
 
-    const { id } = req.params
+    const id = parseInt(req.params.id)
 
     //check if req.userId has canEdit true in junction table = permission to add
+
     const canEdit = await prisma.userGroceryList.findFirst({
         where: {
             userId: req.userId,
-            groceryListId: parseInt(id),
+            groceryListId: id,
             canEdit: true,
         },
     })
@@ -169,89 +173,96 @@ export const makeShareUrl = async (req, res) => {
         formatError(403, 'You are not authorized to share this grocery list')
     }
 
-    //return a url that encodes which groceryList and the permission being given
-
-    const groceryListOwner = await prisma.user.findUnique({
-        where: {
-            id: req.userId,
-        },
-        select: {
-            name: true,
-        },
-    })
-
-    if (!groceryListOwner) {
-        formatError(500, 'Error getting owner name')
-    }
-
-    const url = jwt.sign(
+    //return a url that encodes which grocery lists and ownersName
+    const token = jwt.sign(
         {
             title: req.body.title,
-            owner: groceryListOwner.name,
-            groceryListId: parseInt(id),
-            canEdit: req.body.canEdit,
+            owner: req.body.owner,
+            groceryListId: id,
         },
         process.env.JWT_SECRET,
         {
             expiresIn: '2h',
         }
     )
+    const url = Buffer.from(token).toString('base64')
 
     return res.status(200).send(url)
 }
 
-export const joinGroceryList = async (req, res) => {
-    const { url } = req.params
+export const getShare = async (req, res) => {
+    const groceryListId = parseInt(req.params.id)
 
-    let decodedUrl = null
-
-    jwt.verify(url, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            if (err.name === 'TokenExpiredError') {
-                formatError(400, 'Link has expired')
-            } else {
-                formatError(400, 'Link is not valid')
-            }
-        } else {
-            decodedUrl = { ...decoded }
-        }
-    })
-
-    const existingAccess = await prisma.userGroceryList.findFirst({
-        where: {
-            userId: req.userId,
-            groceryListId: decodedUrl.groceryListId,
-        },
-    })
-
-    if (existingAccess) {
-        formatError(400, 'Already joined')
+    if (!groceryListId) {
+        formatError(400, 'Valid grocery list id required')
     }
 
-    const newShare = await prisma.userGroceryList.create({
-        data: {
-            groceryListId: decodedUrl.groceryListId,
-            canEdit: decodedUrl.canEdit,
-            userId: req.userId,
+    const isOwner = await prisma.groceryList.findFirst({
+        where: {
+            id: groceryListId,
+            ownerId: req.userId,
         },
     })
 
-    return res.status(201).send('Successfully joined')
+    if (!isOwner) {
+        formatError(403, 'Unauthorized')
+    }
+
+    const userIds = await prisma.userGroceryList.findMany({
+        where: {
+            groceryListId,
+            NOT: {
+                userId: req.userId,
+            },
+        },
+        select: {
+            userId: true,
+            canEdit: true,
+        },
+    })
+
+    const users = await prisma.user.findMany({
+        where: {
+            id: {
+                in: userIds.map((userGroceryList) => userGroceryList.userId),
+            },
+        },
+        select: {
+            id: true,
+            name: true,
+        },
+    })
+
+    const usersWithCanEdit = userIds.map((userGroceryList) => ({
+        userId: userGroceryList.userId,
+        canEdit: userGroceryList.canEdit,
+        name: users.find((user) => user.id === userGroceryList.userId).name,
+    }))
+
+    return res.status(200).send(usersWithCanEdit)
 }
 
 export const updateShare = async (req, res) => {
     const { error } = updateShareSchema.validate({ ...req.body, ...req.params })
 
+    const { editingIds, deletingIds } = req.body
+
+    const id = parseInt(req.params.id)
+
     if (error) {
         formatError(400, error.details[0].message)
     }
 
-    const { id } = req.params
-
     const isOwner = await prisma.groceryList.findFirst({
         where: {
-            id: parseInt(id),
+            id,
             ownerId: req.userId,
+        },
+    })
+
+    const ownerName = await prisma.groceryList.findFirst({
+        where: {
+            id: req.userId,
         },
     })
 
@@ -259,45 +270,52 @@ export const updateShare = async (req, res) => {
         formatError(403, 'Unauthorized')
     }
 
-    const updatedPermission = await prisma.userGroceryList.updateMany({
-        where: {
-            groceryListId: parseInt(id),
-            userId: req.body.userId,
-        },
-        data: {
-            canEdit: req.body.canEdit,
-        },
-    })
+    if (editingIds.length > 0) {
+        const userGroceryLists = await prisma.userGroceryList.findMany({
+            where: {
+                userId: { in: editingIds },
+                groceryListId: id,
+            },
+        })
+
+        const updated = await prisma.userGroceryList.updateMany({
+            where: {
+                userId: { in: editingIds },
+                groceryListId: id,
+            },
+            data: {
+                canEdit: !userGroceryLists[0].canEdit,
+            },
+        })
+    }
+
+    if (deletingIds.length > 0) {
+        const deleted = await prisma.userGroceryList.deleteMany({
+            where: {
+                groceryListId: id,
+                userId: {
+                    in: deletingIds,
+                },
+            },
+        })
+    }
 
     return res.status(200).send('Permissions updated')
 }
 
 export const removeShare = async (req, res) => {
-    const { error } = removeShareSchema.validate({ ...req.body, ...req.params })
+    const id = parseInt(req.params.id)
 
-    if (error) {
-        formatError(400, error.details[0].message)
-    }
-
-    const { id } = req.params
-
-    const isOwner = await prisma.groceryList.findFirst({
-        where: {
-            id: parseInt(id),
-            ownerId: req.userId,
-        },
-    })
-
-    if (!isOwner) {
-        formatError(403, 'Unauthorized')
+    if (!id) {
+        formatError(400, 'Id is invalid')
     }
 
     await prisma.userGroceryList.deleteMany({
         where: {
-            groceryListId: parseInt(id),
+            groceryListId: id,
             userId: req.body.userId,
         },
     })
 
-    return res.status(200).send('User removed')
+    return res.status(200).send('You have been removed')
 }

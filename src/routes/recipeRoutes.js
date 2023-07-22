@@ -5,10 +5,10 @@ import {
     createRecipe,
     updateRecipe,
     deleteRecipe,
-    joinRecipe,
     updateShare,
-    removeShare,
     makeShareUrl,
+    getShare,
+    removeShare,
 } from '../controllers/recipeController.js'
 
 const router = express.Router()
@@ -16,10 +16,10 @@ const router = express.Router()
 router.route('/').get(getRecipes).post(createRecipe)
 router.route('/:id').put(updateRecipe).delete(deleteRecipe)
 router
-    .route('/:id/share')
+    .route('/:id/permissions')
+    .get(getShare)
     .put(updateShare)
-    .delete(removeShare)
     .post(makeShareUrl)
-router.route('/join/:url').post(joinRecipe)
+    .delete(removeShare)
 
 export default router

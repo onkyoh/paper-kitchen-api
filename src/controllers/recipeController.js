@@ -4,14 +4,15 @@ import {
 } from '../validations/recipeValidation.js'
 import {
     updateShareSchema,
-    shareUrlSchema,
     createListSchema,
     removeShareSchema,
+    makeShareUrlSchema,
 } from '../validations/schemas/sharedSchemas.js'
 import formatError from '../util/formatError.js'
 import prisma from '../config/db.js'
 import jwt from 'jsonwebtoken'
 import generateToken from '../util/generateToken.js'
+import { Prisma } from '@prisma/client'
 
 export const getRecipes = async (req, res) => {
     const { error } = recipesQuerySchema.validate(req.query)
@@ -33,20 +34,24 @@ export const getRecipes = async (req, res) => {
 
     let where = {}
 
-    if (isOwner) {
+    function notZeroString(string) {
+        return parseInt(string) === 0 ? false : true
+    }
+
+    if (isOwner === 'true') {
         where.ownerId = req.userId
     }
 
-    if (maxCookingTime) {
-        where.cookingTime = { lte: parseInt(maxCookingTime) }
+    if (maxCookingTime && notZeroString(maxCookingTime)) {
+        where.cookingTime = { lte: +maxCookingTime }
     }
 
-    if (maxCost) {
-        where.cost = { lte: parseInt(maxCost) }
+    if (maxCost && notZeroString(maxCost)) {
+        where.cost = { lte: +maxCost }
     }
 
-    if (serves) {
-        where.serves = { gte: parseInt(serves) }
+    if (serves && notZeroString(serves)) {
+        where.serves = { gte: +serves }
     }
 
     if (favourite === 'true') {
@@ -60,8 +65,9 @@ export const getRecipes = async (req, res) => {
         }
     }
 
-    const skip = page ? (parseInt(page) - 1) * parseInt(pageSize) : undefined
-    const take = pageSize ? parseInt(pageSize) : undefined
+    const calculatedPage = parseInt(page) || 1
+    const take = pageSize ? parseInt(pageSize) : 10
+    const skip = (calculatedPage - 1) * parseInt(take)
 
     const recipes = await prisma.recipe.findMany({
         where: {
@@ -74,6 +80,9 @@ export const getRecipes = async (req, res) => {
         },
         skip,
         take,
+        orderBy: {
+            updatedAt: 'desc',
+        },
     })
 
     if (recipes) {
@@ -195,19 +204,23 @@ export const deleteRecipe = async (req, res) => {
 }
 
 export const makeShareUrl = async (req, res) => {
-    const { error } = shareUrlSchema.validate({ ...req.body, ...req.params })
+    const { error } = makeShareUrlSchema.validate({
+        ...req.body,
+        ...req.params,
+    })
 
     if (error) {
         formatError(400, error.details[0].message)
     }
 
-    const { id } = req.params
+    const id = parseInt(req.params.id)
 
     //check if req.userId has canEdit true in junction table = permission to add
+
     const canEdit = await prisma.userRecipe.findFirst({
         where: {
             userId: req.userId,
-            recipeId: parseInt(id),
+            recipeId: id,
             canEdit: true,
         },
     })
@@ -216,88 +229,89 @@ export const makeShareUrl = async (req, res) => {
         formatError(403, 'You are not authorized to share this recipe')
     }
 
-    //return a url that encodes which recipe and the permission being given
-
-    const recipeOwner = await prisma.user.findUnique({
-        where: {
-            id: req.userId,
-        },
-        select: {
-            name: true,
-        },
-    })
-
-    if (!recipeOwner) {
-        formatError(500, 'Error getting owner name')
-    }
-
-    const url = jwt.sign(
+    //return a url that encodes which recipe and ownersName
+    const token = jwt.sign(
         {
             title: req.body.title,
-            owner: recipeOwner.name,
-            recipeId: parseInt(id),
-            canEdit: req.body.canEdit,
+            owner: req.body.owner,
+            recipeId: id,
         },
         process.env.JWT_SECRET,
         {
             expiresIn: '2h',
         }
     )
+    const url = Buffer.from(token).toString('base64')
 
     return res.status(200).send(url)
 }
 
-export const joinRecipe = async (req, res) => {
-    const { url } = req.params
+export const getShare = async (req, res) => {
+    const recipeId = parseInt(req.params.id)
 
-    let decodedUrl = null
-
-    jwt.verify(url, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            if (err.name === 'TokenExpiredError') {
-                formatError(400, 'Link has expired')
-            } else {
-                formatError(400, 'Link is not valid')
-            }
-        } else {
-            decodedUrl = { ...decoded }
-        }
-    })
-
-    const existingAccess = await prisma.userRecipe.findFirst({
-        where: {
-            userId: req.userId,
-            recipeId: decodedUrl.recipeId,
-        },
-    })
-
-    if (existingAccess) {
-        formatError(400, 'Already joined')
+    if (!recipeId) {
+        formatError(400, 'Valid recipe id required')
     }
 
-    const newShare = await prisma.userRecipe.create({
-        data: {
-            recipeId: decodedUrl.recipeId,
-            canEdit: decodedUrl.canEdit,
-            userId: req.userId,
+    const isOwner = await prisma.recipe.findFirst({
+        where: {
+            id: recipeId,
+            ownerId: req.userId,
         },
     })
 
-    return res.status(201).send('Successfully joined')
+    if (!isOwner) {
+        formatError(403, 'Unauthorized')
+    }
+
+    const userIds = await prisma.userRecipe.findMany({
+        where: {
+            recipeId,
+            NOT: {
+                userId: req.userId,
+            },
+        },
+        select: {
+            userId: true,
+            canEdit: true,
+        },
+    })
+
+    const users = await prisma.user.findMany({
+        where: {
+            id: {
+                in: userIds.map((userRecipe) => userRecipe.userId),
+            },
+        },
+        select: {
+            id: true,
+            name: true,
+        },
+    })
+
+    const usersWithCanEdit = userIds.map((userRecipe) => ({
+        userId: userRecipe.userId,
+        canEdit: userRecipe.canEdit,
+        name: users.find((user) => user.id === userRecipe.userId).name,
+    }))
+
+    return res.status(200).send(usersWithCanEdit)
 }
 
 export const updateShare = async (req, res) => {
     const { error } = updateShareSchema.validate({ ...req.body, ...req.params })
 
+    const { editingIds, deletingIds } = req.body
+
+    const id = parseInt(req.params.id)
+
     if (error) {
         formatError(400, error.details[0].message)
     }
 
-    const { id } = req.params
-
     const isOwner = await prisma.recipe.findFirst({
         where: {
-            id: parseInt(id),
+            id,
             ownerId: req.userId,
         },
     })
@@ -306,45 +320,52 @@ export const updateShare = async (req, res) => {
         formatError(403, 'Unauthorized')
     }
 
-    const updatedPermission = await prisma.userRecipe.updateMany({
-        where: {
-            recipeId: parseInt(id),
-            userId: req.body.userId,
-        },
-        data: {
-            canEdit: req.body.canEdit,
-        },
-    })
+    if (editingIds.length > 0) {
+        const userRecipes = await prisma.userRecipe.findMany({
+            where: {
+                userId: { in: editingIds },
+                recipeId: id,
+            },
+        })
+
+        const updated = await prisma.userRecipe.updateMany({
+            where: {
+                userId: { in: editingIds },
+                recipeId: id,
+            },
+            data: {
+                canEdit: !userRecipes[0].canEdit,
+            },
+        })
+    }
+
+    if (deletingIds.length > 0) {
+        const deleted = await prisma.userRecipe.deleteMany({
+            where: {
+                recipeId: id,
+                userId: {
+                    in: deletingIds,
+                },
+            },
+        })
+    }
 
     return res.status(200).send('Permissions updated')
 }
 
 export const removeShare = async (req, res) => {
-    const { error } = removeShareSchema.validate({ ...req.body, ...req.params })
+    const id = parseInt(req.params.id)
 
-    if (error) {
-        formatError(400, error.details[0].message)
-    }
-
-    const { id } = req.params
-
-    const isOwner = await prisma.recipe.findFirst({
-        where: {
-            id: parseInt(id),
-            ownerId: req.userId,
-        },
-    })
-
-    if (!isOwner) {
-        formatError(403, 'Unauthorized')
+    if (!id) {
+        formatError(400, 'Id is invalid')
     }
 
     await prisma.userRecipe.deleteMany({
         where: {
-            recipeId: parseInt(id),
+            recipeId: id,
             userId: req.body.userId,
         },
     })
 
-    return res.status(200).send('User removed')
+    return res.status(200).send('You have been removed')
 }

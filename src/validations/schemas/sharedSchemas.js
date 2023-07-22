@@ -9,14 +9,14 @@ export const instructionSchema = Joi.object({
 export const ingredientSchema = Joi.object({
     id: Joi.string().required(),
     name: Joi.string().required(),
-    amount: Joi.string().allow(null),
-    unit: Joi.string().allow(null),
+    amount: Joi.string().allow(null).empty(''),
+    unit: Joi.string().allow(null).empty(''),
 })
 
 export const updateShareSchema = Joi.object({
     id: Joi.number().integer().required(),
-    userId: Joi.number().integer().required(),
-    canEdit: Joi.boolean().required(),
+    editingIds: Joi.array().items(Joi.number()).min(0).required(),
+    deletingIds: Joi.array().items(Joi.number()).min(0).required(),
 })
 
 export const removeShareSchema = Joi.object({
@@ -24,10 +24,10 @@ export const removeShareSchema = Joi.object({
     userId: Joi.number().integer().required(),
 })
 
-export const shareUrlSchema = Joi.object({
-    title: Joi.string().required(),
-    canEdit: Joi.boolean().required(),
+export const makeShareUrlSchema = Joi.object({
     id: Joi.number().integer().required(),
+    title: Joi.string().required(),
+    owner: Joi.string().required(),
 })
 
 export const createListSchema = Joi.object({

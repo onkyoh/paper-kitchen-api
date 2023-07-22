@@ -6,9 +6,9 @@ export const updateRecipeSchema = Joi.object({
     id: Joi.number().integer().required(),
     ownerId: Joi.number().integer().required(),
     title: Joi.string().required(),
-    serves: Joi.number().integer().allow(null),
-    cookingTime: Joi.number().integer().allow(null),
-    cost: Joi.number().integer().allow(null),
+    serves: Joi.number().integer().allow(null).max(30),
+    cookingTime: Joi.number().integer().allow(null).max(600),
+    cost: Joi.number().integer().allow(null).max(300),
     favourite: Joi.boolean().required(),
     color: Joi.string()
         .valid(...BACKGROUND_COLORS)
@@ -23,9 +23,9 @@ export const updateRecipeSchema = Joi.object({
 
 export const recipesQuerySchema = Joi.object({
     isOwner: Joi.boolean(),
-    maxCookingTime: Joi.string(),
-    maxCost: Joi.string(),
-    serves: Joi.string(),
+    serves: Joi.number().integer().allow('').max(30),
+    maxCookingTime: Joi.number().integer().allow('').max(600),
+    maxCost: Joi.number().integer().allow('').max(300),
     favourite: Joi.boolean(),
     ingredients: Joi.array().items(Joi.string()),
     page: Joi.number().integer(),

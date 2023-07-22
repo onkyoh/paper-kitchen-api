@@ -5,10 +5,10 @@ import {
     getGroceryLists,
     updateGroceryList,
     deleteGroceryList,
-    joinGroceryList,
     updateShare,
-    removeShare,
+    getShare,
     makeShareUrl,
+    removeShare,
 } from '../controllers/groceryController.js'
 
 const router = express.Router()
@@ -16,10 +16,10 @@ const router = express.Router()
 router.route('/').get(getGroceryLists).post(createGroceryList)
 router.route('/:id').put(updateGroceryList).delete(deleteGroceryList)
 router
-    .route('/:id/share')
+    .route('/:id/permissions')
+    .get(getShare)
     .put(updateShare)
-    .delete(removeShare)
     .post(makeShareUrl)
-router.route('/join/:url').post(joinGroceryList)
+    .delete(removeShare)
 
 export default router

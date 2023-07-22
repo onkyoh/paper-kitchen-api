@@ -36,6 +36,8 @@ export const registerUser = async (req, res) => {
         res.cookie('access_token', token, {
             httpOnly: true,
             maxAge: 30 * 24 * 60 * 60 * 1000,
+            sameSite: 'none',
+            secure: process.env.NODE_ENV !== 'test',
         })
 
         return res.status(201).send({
@@ -66,9 +68,12 @@ export const loginUser = async (req, res) => {
 
     if (user && (await compare(req.body.password, user.password))) {
         const token = generateToken(user.id)
+
         res.cookie('access_token', token, {
             httpOnly: true,
             maxAge: 30 * 24 * 60 * 60 * 1000,
+            sameSite: 'none',
+            secure: process.env.NODE_ENV !== 'test',
         })
 
         return res.status(200).send({
@@ -87,7 +92,18 @@ export const getUser = async (req, res) => {
         },
     })
     if (user) {
-        return res.status(200).send(user)
+        return res.status(200).send({
+            id: user.id,
+            username: user.username,
+            name: user.name,
+        })
     }
-    formatError(400, 'Error getting user')
+    formatError(500, 'User not found')
+}
+
+export const logoutUser = async (req, res) => {
+    res.clearCookie('access_token', {
+        sameSite: 'none',
+        secure: true,
+    }).sendStatus(204)
 }
