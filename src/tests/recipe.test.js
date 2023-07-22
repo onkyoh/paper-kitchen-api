@@ -4,26 +4,36 @@ import prisma from '../config/db.js'
 
 const request = supertest.agent(app)
 
-describe('/recipes', () => {
-    beforeAll(async () => {
-        const newUser = {
-            name: 'John Doe',
-            username: 'recipeTest',
-            password: 'password123',
-        }
+let testUsers = []
+let testRecipes = []
 
+describe('/recipes', () => {
+    const newUser = {
+        name: 'John Doe',
+        username: 'recipeTest',
+        password: 'password123',
+    }
+
+    testUsers.push(newUser.username)
+
+    beforeAll(async () => {
         const response = await request.post('/api/users/register').send(newUser)
     })
 
     afterAll(async () => {
         await prisma.userRecipe.deleteMany()
-        await prisma.recipe.deleteMany()
+        await prisma.recipe.deleteMany({
+            where: {
+                id: {
+                    in: testRecipes,
+                },
+            },
+        })
         await prisma.user.deleteMany({
             where: {
-                OR: [
-                    { username: 'recipeTest' },
-                    { username: 'recipeShareTest' },
-                ],
+                username: {
+                    in: testUsers,
+                },
             },
         })
 
@@ -38,6 +48,7 @@ describe('/recipes', () => {
     describe('POST', () => {
         it('should create a recipe and return it', async () => {
             const response = await request.post('/api/recipes').send(recipeData)
+            testRecipes.push(response.body.id)
 
             expect(response.status).toBe(201)
             expect(response.body).toEqual(expect.objectContaining(recipeData))
@@ -47,9 +58,7 @@ describe('/recipes', () => {
             const response = await request.post('/api/recipes').send({})
 
             expect(response.status).toBe(400)
-            expect(response.body).toEqual({
-                msg: 'title is required',
-            })
+            expect(response.text).toEqual('title is required')
         })
     })
     describe('GET', () => {
@@ -102,9 +111,7 @@ describe('/recipes', () => {
             const response = await request.get('/api/recipes?invalidQuery=123')
 
             expect(response.status).toBe(400)
-            expect(response.body).toEqual({
-                msg: 'invalidQuery is not allowed',
-            })
+            expect(response.text).toEqual('invalidQuery is not allowed')
         })
     })
 
@@ -133,9 +140,9 @@ describe('/recipes', () => {
                     .send(updatedRecipe)
 
                 expect(response.status).toBe(403)
-                expect(response.body).toEqual({
-                    msg: 'You are not authorized to update this recipe',
-                })
+                expect(response.text).toEqual(
+                    'You are not authorized to update this recipe'
+                )
             })
 
             it('should return an error if the request body is invalid', async () => {
@@ -146,9 +153,9 @@ describe('/recipes', () => {
                         title: '',
                     })
                 expect(response.status).toBe(400)
-                expect(response.body).toEqual({
-                    msg: 'title is not allowed to be empty',
-                })
+                expect(response.text).toEqual(
+                    'title is not allowed to be empty'
+                )
             })
         })
 
@@ -166,82 +173,98 @@ describe('/recipes', () => {
                     `/api/recipes/${updatedRecipe.id + 1}`
                 )
                 expect(response.status).toBe(403)
-                expect(response.body).toEqual({
-                    msg: 'You are not authorized to delete this recipe',
-                })
+                expect(response.text).toEqual(
+                    'You are not authorized to delete this recipe'
+                )
             })
         })
 
-        describe('/share', () => {
+        describe('/permissions', () => {
             let sharedRecipe
             let sharedUrl
-            let sharedUser
+            let sharedBody
 
-            const shareBody = {
-                canEdit: true,
-                title: 'Test Recipe',
+            const newShareUser = {
+                name: 'Shared User',
+                username: 'recipeTestShared',
+                password: 'password123',
             }
 
-            beforeAll(async () => {
-                const response2 = await request
-                    .post('/api/users/register')
-                    .send({
-                        name: 'Test User',
-                        username: 'recipeShareTest',
-                        password: 'password123',
-                    })
+            testUsers.push(newShareUser.username)
 
-                sharedUser = response2.body
+            beforeAll(async () => {
                 const response = await request
                     .post('/api/recipes')
                     .send(recipeData)
+
                 sharedRecipe = response.body
+                testRecipes.push(sharedRecipe.id)
+
+                sharedBody = {
+                    owner: newUser.name,
+                    title: sharedRecipe.title,
+                }
             })
 
             describe('POST', () => {
                 it('should create and return a shareable recipe link', async () => {
                     const response = await request
-                        .post(`/api/recipes/${sharedRecipe.id}/share`)
-                        .send(shareBody)
+                        .post(`/api/recipes/${sharedRecipe.id}/permissions`)
+                        .send(sharedBody)
                     expect(response.status).toBe(200)
+                    expect(response.text).toBeDefined()
                     sharedUrl = response.text
                 })
 
                 it('should return an error if the request body is invalid', async () => {
                     const response = await request
-                        .post(`/api/recipes/${sharedRecipe.id}/share`)
-                        .send({ title: 'Test Recipe' })
+                        .post(`/api/recipes/${sharedRecipe.id}/permissions`)
+                        .send({ owner: sharedBody.owner })
                     expect(response.status).toBe(400)
-                    expect(response.body).toEqual(
-                        expect.objectContaining({
-                            msg: 'canEdit is required',
-                        })
-                    )
+                    expect(response.text).toEqual('title is required')
                 })
 
                 it('should return an error if the requester does not have access to share the recipe', async () => {
                     const response = await request
-                        .post(`/api/recipes/${sharedRecipe.id + 1}/share`)
-                        .send(shareBody)
+                        .post(`/api/recipes/${sharedRecipe.id + 1}/permissions`)
+                        .send(sharedBody)
                     expect(response.status).toBe(403)
-                    expect(response.body).toEqual({
-                        msg: 'You are not authorized to share this recipe',
-                    })
+                    expect(response.text).toEqual(
+                        'You are not authorized to share this recipe'
+                    )
                 })
             })
             describe('PUT', () => {
-                let updateShareBody
+                let sharedUser
+
                 beforeAll(async () => {
-                    updateShareBody = {
-                        canEdit: false,
-                        userId: sharedUser.id,
-                    }
+                    const response = await request
+                        .post('/api/users/register')
+                        .send(newShareUser)
+
+                    sharedUser = response.body
+
+                    await request.post(`/api/join/${sharedUrl}`)
+
+                    await request.post('/api/users/login').send({
+                        username: newUser.username,
+                        password: newUser.password,
+                    })
                 })
 
-                it('should update a the sharing permissions of a recipe', async () => {
+                it('should update a editing permissions of designated users for a recipe', async () => {
                     const response = await request
-                        .put(`/api/recipes/${sharedRecipe.id}/share`)
-                        .send(updateShareBody)
+                        .put(`/api/recipes/${sharedRecipe.id}/permissions`)
+                        .send({ editingIds: [sharedUser.id], deletingIds: [] })
+
+                    expect(response.status).toBe(200)
+                    expect(response.text).toEqual('Permissions updated')
+                })
+
+                it('should remove designated users access for a recipe', async () => {
+                    const response = await request
+                        .put(`/api/recipes/${sharedRecipe.id}/permissions`)
+                        .send({ editingIds: [], deletingIds: [sharedUser.id] })
 
                     expect(response.status).toBe(200)
                     expect(response.text).toEqual('Permissions updated')
@@ -249,93 +272,42 @@ describe('/recipes', () => {
 
                 it('should return and error if the request body is invalid', async () => {
                     const response = await request
-                        .put(`/api/recipes/${sharedRecipe.id}/share`)
+                        .put(`/api/recipes/${sharedRecipe.id}/permissions`)
                         .send({})
                     expect(response.status).toBe(400)
-                    expect(response.body).toEqual({
-                        msg: 'userId is required',
-                    })
+                    expect(response.text).toEqual('editingIds is required')
                 })
 
-                it('should return an error if the requester does not have access to share the recipe', async () => {
+                it('should return an error if the requester is not the recipe owner', async () => {
                     const response = await request
-                        .put(`/api/recipes/${sharedRecipe.id + 1}/share`)
-                        .send(updateShareBody)
+                        .put(`/api/recipes/${sharedRecipe.id + 1}/permissions`)
+                        .send({ editingIds: [], deletingIds: [] })
                     expect(response.status).toBe(403)
-                    expect(response.body).toEqual({
-                        msg: 'Unauthorized',
-                    })
+                    expect(response.text).toEqual('Unauthorized')
                 })
             })
             describe('DELETE', () => {
-                it('should delete the access of designated user from designated recipe', async () => {
-                    const response = await request
-                        .delete(`/api/recipes/${sharedRecipe.id}/share`)
-                        .send({
-                            userId: sharedUser.id,
-                        })
+                beforeAll(async () => {
+                    await request.post('/api/users/login').send({
+                        username: newShareUser.username,
+                        password: newShareUser.password,
+                    })
+                })
 
+                it('should allow user to remove their access from recipe', async () => {
+                    const response = await request.delete(
+                        `/api/recipes/${sharedRecipe.id}/permissions`
+                    )
                     expect(response.status).toBe(200)
-                    expect(response.text).toEqual('User removed')
+                    expect(response.text).toEqual('You have been removed')
                 })
 
-                it('should return and error if the request body is invalid', async () => {
-                    const response = await request
-                        .delete(`/api/recipes/${sharedRecipe.id}/share`)
-                        .send({})
+                it('should return and error if id is invalid', async () => {
+                    const response = await request.delete(
+                        `/api/recipes/invalid/permissions`
+                    )
                     expect(response.status).toBe(400)
-                    expect(response.body).toEqual({
-                        msg: 'userId is required',
-                    })
-                })
-
-                it('should return an error if the requester does not have access to share the recipe', async () => {
-                    const response = await request
-                        .delete(`/api/recipes/${sharedRecipe.id + 1}/share`)
-                        .send({
-                            userId: sharedUser.id,
-                        })
-                    expect(response.status).toBe(403)
-                    expect(response.body).toEqual({
-                        msg: 'Unauthorized',
-                    })
-                })
-            })
-
-            describe('/share/:url', () => {
-                describe('POST', () => {
-                    it('should add a user to the recipe', async () => {
-                        const response = await request.post(
-                            `/api/recipes/join/${sharedUrl}`
-                        )
-
-                        expect(response.status).toBe(201)
-                        expect(response.text).toEqual('Successfully joined')
-                    })
-
-                    it('should return an error if url is not valid JWT', async () => {
-                        const response = await request.post(
-                            `/api/recipes/join/${'fakeUrl'}`
-                        )
-                        expect(response.status).toBe(400)
-                        expect(response.body).toEqual({
-                            msg: 'Link is not valid',
-                        })
-                    })
-
-                    it('should return an error if user already has access to the recipe', async () => {
-                        const response = await request.post(
-                            `/api/recipes/join/${sharedUrl}`
-                        )
-                        const response2 = await request.post(
-                            `/api/recipes/join/${sharedUrl}`
-                        )
-
-                        expect(response2.status).toBe(400)
-                        expect(response2.body).toEqual({
-                            msg: 'Already joined',
-                        })
-                    })
+                    expect(response.text).toEqual('Id is invalid')
                 })
             })
         })

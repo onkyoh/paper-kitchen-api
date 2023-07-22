@@ -4,33 +4,43 @@ import prisma from '../config/db.js'
 
 const request = supertest.agent(app)
 
-describe('/groceryLists', () => {
-    beforeAll(async () => {
-        const newUser = {
-            name: 'John Doe',
-            username: 'groceryTest',
-            password: 'password123',
-        }
+let testUsers = []
+let testGroceryLists = []
 
+describe('/groceryLists', () => {
+    const newUser = {
+        name: 'John Doe',
+        username: 'groceryTest',
+        password: 'password123',
+    }
+
+    testUsers.push(newUser.username)
+
+    beforeAll(async () => {
         const response = await request.post('/api/users/register').send(newUser)
     })
 
     afterAll(async () => {
         await prisma.userGroceryList.deleteMany()
-        await prisma.groceryList.deleteMany()
+        await prisma.groceryList.deleteMany({
+            where: {
+                id: {
+                    in: testGroceryLists,
+                },
+            },
+        })
         await prisma.user.deleteMany({
             where: {
-                OR: [
-                    { username: 'groceryTest' },
-                    { username: 'groceryShareTest' },
-                ],
+                username: {
+                    in: testUsers,
+                },
             },
         })
 
         await prisma.$disconnect()
     })
 
-    const groceryData = {
+    const groceryListData = {
         title: 'Test GroceryList',
         color: 'bg-red-400',
     }
@@ -39,19 +49,21 @@ describe('/groceryLists', () => {
         it('should create a grocery list and return it', async () => {
             const response = await request
                 .post('/api/grocery-lists')
-                .send(groceryData)
+                .send(groceryListData)
+
+            testGroceryLists.push(response.body.id)
 
             expect(response.status).toBe(201)
-            expect(response.body).toEqual(expect.objectContaining(groceryData))
+            expect(response.body).toEqual(
+                expect.objectContaining(groceryListData)
+            )
         })
 
         it('should return an error if required fields are missing', async () => {
             const response = await request.post('/api/grocery-lists').send({})
 
             expect(response.status).toBe(400)
-            expect(response.body).toEqual({
-                msg: 'title is required',
-            })
+            expect(response.text).toEqual('title is required')
         })
     })
     describe('GET', () => {
@@ -61,7 +73,7 @@ describe('/groceryLists', () => {
             expect(response.status).toBe(200)
             expect(response.body.length).toBe(1)
             expect(response.body[0]).toEqual(
-                expect.objectContaining(groceryData)
+                expect.objectContaining(groceryListData)
             )
         })
     })
@@ -91,9 +103,9 @@ describe('/groceryLists', () => {
                     .send(updatedGroceryList)
 
                 expect(response.status).toBe(403)
-                expect(response.body).toEqual({
-                    msg: 'You are not authorized to update this grocery list',
-                })
+                expect(response.text).toEqual(
+                    'You are not authorized to update this grocery list'
+                )
             })
 
             it('should return an error if the request body is invalid', async () => {
@@ -104,9 +116,9 @@ describe('/groceryLists', () => {
                         title: '',
                     })
                 expect(response.status).toBe(400)
-                expect(response.body).toEqual({
-                    msg: 'title is not allowed to be empty',
-                })
+                expect(response.text).toEqual(
+                    'title is not allowed to be empty'
+                )
             })
         })
 
@@ -124,90 +136,110 @@ describe('/groceryLists', () => {
                     `/api/grocery-lists/${updatedGroceryList.id + 1}`
                 )
                 expect(response.status).toBe(403)
-                expect(response.body).toEqual({
-                    msg: 'You are not authorized to delete this grocery list',
-                })
+                expect(response.text).toEqual(
+                    'You are not authorized to delete this grocery list'
+                )
             })
         })
 
-        describe('/share', () => {
+        describe('/permissions', () => {
             let sharedGroceryList
             let sharedUrl
-            let sharedUser
+            let sharedBody
 
-            const shareBody = {
-                canEdit: true,
-                title: 'Test GroceryList',
+            const newShareUser = {
+                name: 'Shared User',
+                username: 'groceryListTestShared',
+                password: 'password123',
             }
 
-            beforeAll(async () => {
-                const response2 = await request
-                    .post('/api/users/register')
-                    .send({
-                        name: 'Test User',
-                        username: 'groceryShareTest',
-                        password: 'password123',
-                    })
+            testUsers.push(newShareUser.username)
 
-                sharedUser = response2.body
+            beforeAll(async () => {
                 const response = await request
                     .post('/api/grocery-lists')
-                    .send(groceryData)
+                    .send(groceryListData)
+
                 sharedGroceryList = response.body
+                testGroceryLists.push(sharedGroceryList.id)
+
+                sharedBody = {
+                    owner: newUser.name,
+                    title: sharedGroceryList.title,
+                }
             })
 
             describe('POST', () => {
                 it('should create and return a shareable grocery list link', async () => {
                     const response = await request
                         .post(
-                            `/api/grocery-lists/${sharedGroceryList.id}/share`
+                            `/api/grocery-lists/${sharedGroceryList.id}/permissions`
                         )
-                        .send(shareBody)
+                        .send(sharedBody)
                     expect(response.status).toBe(200)
+                    expect(response.text).toBeDefined()
                     sharedUrl = response.text
                 })
 
                 it('should return an error if the request body is invalid', async () => {
                     const response = await request
                         .post(
-                            `/api/grocery-lists/${sharedGroceryList.id}/share`
+                            `/api/grocery-lists/${sharedGroceryList.id}/permissions`
                         )
-                        .send({ title: 'Test GroceryList' })
+                        .send({ owner: sharedBody.owner })
                     expect(response.status).toBe(400)
-                    expect(response.body).toEqual(
-                        expect.objectContaining({
-                            msg: 'canEdit is required',
-                        })
-                    )
+                    expect(response.text).toEqual('title is required')
                 })
 
-                it('should return an error if the requester does not have access to share the grocery list', async () => {
+                it('should return an error if the requester does not have access to share the groceryList', async () => {
                     const response = await request
                         .post(
                             `/api/grocery-lists/${
                                 sharedGroceryList.id + 1
-                            }/share`
+                            }/permissions`
                         )
-                        .send(shareBody)
+                        .send(sharedBody)
                     expect(response.status).toBe(403)
-                    expect(response.body).toEqual({
-                        msg: 'You are not authorized to share this grocery list',
-                    })
+                    expect(response.text).toEqual(
+                        'You are not authorized to share this grocery list'
+                    )
                 })
             })
             describe('PUT', () => {
-                let updateShareBody
+                let sharedUser
+
                 beforeAll(async () => {
-                    updateShareBody = {
-                        canEdit: false,
-                        userId: sharedUser.id,
-                    }
+                    const response = await request
+                        .post('/api/users/register')
+                        .send(newShareUser)
+
+                    sharedUser = response.body
+
+                    await request.post(`/api/join/${sharedUrl}`)
+
+                    await request.post('/api/users/login').send({
+                        username: newUser.username,
+                        password: newUser.password,
+                    })
                 })
 
-                it('should update the sharing permissions of a grocery list', async () => {
+                it('should update a editing permissions of designated users for a groceryList', async () => {
                     const response = await request
-                        .put(`/api/grocery-lists/${sharedGroceryList.id}/share`)
-                        .send(updateShareBody)
+                        .put(
+                            `/api/grocery-lists/${sharedGroceryList.id}/permissions`
+                        )
+                        .send({ editingIds: [sharedUser.id], deletingIds: [] })
+
+                    expect(response.status).toBe(200)
+                    expect(response.text).toEqual('Permissions updated')
+                })
+
+                it('should remove designated users access for a groceryList', async () => {
+                    const response = await request
+                        .put(
+                            `/api/grocery-lists/${sharedGroceryList.id}/permissions`
+                        )
+                        .send({ editingIds: [], deletingIds: [sharedUser.id] })
 
                     expect(response.status).toBe(200)
                     expect(response.text).toEqual('Permissions updated')
@@ -215,105 +247,48 @@ describe('/groceryLists', () => {
 
                 it('should return and error if the request body is invalid', async () => {
                     const response = await request
-                        .put(`/api/grocery-lists/${sharedGroceryList.id}/share`)
+                        .put(
+                            `/api/grocery-lists/${sharedGroceryList.id}/permissions`
+                        )
                         .send({})
                     expect(response.status).toBe(400)
-                    expect(response.body).toEqual({
-                        msg: 'userId is required',
-                    })
+                    expect(response.text).toEqual('editingIds is required')
                 })
 
-                it('should return an error if the requester does not have access to share the grocery list', async () => {
+                it('should return an error if the requester is not the groceryList owner', async () => {
                     const response = await request
                         .put(
                             `/api/grocery-lists/${
                                 sharedGroceryList.id + 1
-                            }/share`
+                            }/permissions`
                         )
-                        .send(updateShareBody)
+                        .send({ editingIds: [], deletingIds: [] })
                     expect(response.status).toBe(403)
-                    expect(response.body).toEqual({
-                        msg: 'Unauthorized',
-                    })
+                    expect(response.text).toEqual('Unauthorized')
                 })
             })
             describe('DELETE', () => {
-                it('should remove the access of designated user from designated grocery list', async () => {
-                    const response = await request
-                        .delete(
-                            `/api/grocery-lists/${sharedGroceryList.id}/share`
-                        )
-                        .send({
-                            userId: sharedUser.id,
-                        })
+                beforeAll(async () => {
+                    await request.post('/api/users/login').send({
+                        username: newShareUser.username,
+                        password: newShareUser.password,
+                    })
+                })
 
+                it('should allow user to remove their access from groceryList', async () => {
+                    const response = await request.delete(
+                        `/api/grocery-lists/${sharedGroceryList.id}/permissions`
+                    )
                     expect(response.status).toBe(200)
-                    expect(response.text).toEqual('User removed')
+                    expect(response.text).toEqual('You have been removed')
                 })
 
-                it('should return and error if the request body is invalid', async () => {
-                    const response = await request
-                        .delete(
-                            `/api/grocery-lists/${sharedGroceryList.id}/share`
-                        )
-                        .send({})
+                it('should return and error if id is invalid', async () => {
+                    const response = await request.delete(
+                        `/api/grocery-lists/invalid/permissions`
+                    )
                     expect(response.status).toBe(400)
-                    expect(response.body).toEqual({
-                        msg: 'userId is required',
-                    })
-                })
-
-                it('should return an error if the requester does not have access to share the grocery list', async () => {
-                    const response = await request
-                        .delete(
-                            `/api/grocery-lists/${
-                                sharedGroceryList.id + 1
-                            }/share`
-                        )
-                        .send({
-                            userId: sharedUser.id,
-                        })
-                    expect(response.status).toBe(403)
-                    expect(response.body).toEqual({
-                        msg: 'Unauthorized',
-                    })
-                })
-            })
-
-            describe('/share/:url', () => {
-                describe('POST', () => {
-                    it('should add a user to the grocery list', async () => {
-                        const response = await request.post(
-                            `/api/grocery-lists/join/${sharedUrl}`
-                        )
-
-                        expect(response.status).toBe(201)
-                        expect(response.text).toEqual('Successfully joined')
-                    })
-
-                    it('should return an error if url is not valid JWT', async () => {
-                        const response = await request.post(
-                            `/api/grocery-lists/join/${'fakeUrl'}`
-                        )
-                        expect(response.status).toBe(400)
-                        expect(response.body).toEqual({
-                            msg: 'Link is not valid',
-                        })
-                    })
-
-                    it('should return an error if user already has access to the grocery list', async () => {
-                        const response = await request.post(
-                            `/api/grocery-lists/join/${sharedUrl}`
-                        )
-                        const response2 = await request.post(
-                            `/api/grocery-lists/join/${sharedUrl}`
-                        )
-
-                        expect(response2.status).toBe(400)
-                        expect(response2.body).toEqual({
-                            msg: 'Already joined',
-                        })
-                    })
+                    expect(response.text).toEqual('Id is invalid')
                 })
             })
         })

@@ -11,12 +11,18 @@ import formatError from './util/formatError.js'
 import userRouter from './routes/userRoutes.js'
 import recipeRouter from './routes/recipeRoutes.js'
 import groceryRouter from './routes/groceryRoutes.js'
+import joinRouter from './routes/joinRoutes.js'
 
 dotenv.config()
 
 const app = express()
 
-app.use(cors())
+app.use(
+    cors({
+        origin: ['http://127.0.0.1:5173'],
+        credentials: true,
+    })
+)
 app.use(helmet())
 app.use(cookieParser())
 app.use(express.json())
@@ -25,6 +31,7 @@ app.use(express.json())
 app.use('/api/users', userRouter)
 app.use('/api/recipes', protect, recipeRouter)
 app.use('/api/grocery-lists', protect, groceryRouter)
+app.use('/api/join', joinRouter)
 
 app.use(notFoundHandler)
 app.use(errorHandler)
