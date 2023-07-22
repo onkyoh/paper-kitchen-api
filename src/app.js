@@ -28,8 +28,6 @@ app.use(cookieParser())
 app.use(express.json())
 //routes
 
-console.log(process.env.DATABASE_URL)
-
 app.use('/api/users', userRouter)
 app.use('/api/recipes', protect, recipeRouter)
 app.use('/api/grocery-lists', protect, groceryRouter)
