@@ -18,7 +18,7 @@ const app = express()
 //config middleware
 app.use(
     cors({
-        origin: process.env.ORIGIN || 'paperkitchen.ca',
+        origin: process.env.ORIGIN || 'https://paperkitchen.ca',
         credentials: true,
     })
 )
