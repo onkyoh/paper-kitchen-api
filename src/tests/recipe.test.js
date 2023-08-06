@@ -8,16 +8,20 @@ let testUsers = []
 let testRecipes = []
 
 describe('/recipes', () => {
-    const newUser = {
+    const recipeOwner = {
         name: 'John Doe',
         username: 'recipeTest',
         password: 'password123',
     }
 
-    testUsers.push(newUser.username)
+    testUsers.push(recipeOwner.username)
 
     beforeAll(async () => {
-        const response = await request.post('/api/users/register').send(newUser)
+        const response = await request
+            .post('/api/users/register')
+            .send(recipeOwner)
+
+        request.set('Authorization', `Bearer ${response.body.token}`)
     })
 
     afterAll(async () => {
@@ -184,13 +188,13 @@ describe('/recipes', () => {
             let sharedUrl
             let sharedBody
 
-            const newShareUser = {
+            const recipeGuest = {
                 name: 'Shared User',
                 username: 'recipeTestShared',
                 password: 'password123',
             }
 
-            testUsers.push(newShareUser.username)
+            testUsers.push(recipeGuest.username)
 
             beforeAll(async () => {
                 const response = await request
@@ -201,7 +205,7 @@ describe('/recipes', () => {
                 testRecipes.push(sharedRecipe.id)
 
                 sharedBody = {
-                    owner: newUser.name,
+                    owner: recipeOwner.name,
                     title: sharedRecipe.title,
                 }
             })
@@ -240,15 +244,17 @@ describe('/recipes', () => {
                 beforeAll(async () => {
                     const response = await request
                         .post('/api/users/register')
-                        .send(newShareUser)
+                        .send(recipeGuest)
 
-                    sharedUser = response.body
+                    sharedUser = response.body.user
 
-                    await request.post(`/api/join/${sharedUrl}`)
+                    await request
+                        .post(`/api/join/${sharedUrl}`)
+                        .set('Authorization', `Bearer ${response.body.token}`)
 
                     await request.post('/api/users/login').send({
-                        username: newUser.username,
-                        password: newUser.password,
+                        username: recipeOwner.username,
+                        password: recipeOwner.password,
                     })
                 })
 
@@ -289,8 +295,8 @@ describe('/recipes', () => {
             describe('DELETE', () => {
                 beforeAll(async () => {
                     await request.post('/api/users/login').send({
-                        username: newShareUser.username,
-                        password: newShareUser.password,
+                        username: recipeGuest.username,
+                        password: recipeGuest.password,
                     })
                 })
 

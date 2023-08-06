@@ -8,16 +8,20 @@ let testUsers = []
 let testGroceryLists = []
 
 describe('/groceryLists', () => {
-    const newUser = {
+    const groceryOwner = {
         name: 'John Doe',
         username: 'groceryTest',
         password: 'password123',
     }
 
-    testUsers.push(newUser.username)
+    testUsers.push(groceryOwner.username)
 
     beforeAll(async () => {
-        const response = await request.post('/api/users/register').send(newUser)
+        const response = await request
+            .post('/api/users/register')
+            .send(groceryOwner)
+
+        request.set('Authorization', `Bearer ${response.body.token}`)
     })
 
     afterAll(async () => {
@@ -147,13 +151,13 @@ describe('/groceryLists', () => {
             let sharedUrl
             let sharedBody
 
-            const newShareUser = {
+            const groceryGuest = {
                 name: 'Shared User',
                 username: 'groceryListTestShared',
                 password: 'password123',
             }
 
-            testUsers.push(newShareUser.username)
+            testUsers.push(groceryGuest.username)
 
             beforeAll(async () => {
                 const response = await request
@@ -164,7 +168,7 @@ describe('/groceryLists', () => {
                 testGroceryLists.push(sharedGroceryList.id)
 
                 sharedBody = {
-                    owner: newUser.name,
+                    owner: groceryOwner.name,
                     title: sharedGroceryList.title,
                 }
             })
@@ -211,15 +215,17 @@ describe('/groceryLists', () => {
                 beforeAll(async () => {
                     const response = await request
                         .post('/api/users/register')
-                        .send(newShareUser)
+                        .send(groceryGuest)
 
-                    sharedUser = response.body
+                    sharedUser = response.body.user
 
-                    await request.post(`/api/join/${sharedUrl}`)
+                    await request
+                        .post(`/api/join/${sharedUrl}`)
+                        .set('Authorization', `Bearer ${response.body.token}`)
 
                     await request.post('/api/users/login').send({
-                        username: newUser.username,
-                        password: newUser.password,
+                        username: groceryOwner.username,
+                        password: groceryOwner.password,
                     })
                 })
 
@@ -270,8 +276,8 @@ describe('/groceryLists', () => {
             describe('DELETE', () => {
                 beforeAll(async () => {
                     await request.post('/api/users/login').send({
-                        username: newShareUser.username,
-                        password: newShareUser.password,
+                        username: groceryGuest.username,
+                        password: groceryGuest.password,
                     })
                 })
 

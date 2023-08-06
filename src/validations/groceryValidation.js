@@ -1,6 +1,6 @@
 import Joi from 'joi'
 import { BACKGROUND_COLORS } from '../util/constants.js'
-import { instructionSchema, ingredientSchema } from './schemas/sharedSchemas.js'
+import { ingredientSchema } from './schemas/sharedSchemas.js'
 
 export const updateGrocerySchema = Joi.object({
     id: Joi.number().integer().required(),
@@ -8,11 +8,16 @@ export const updateGrocerySchema = Joi.object({
     title: Joi.string().required(),
     color: Joi.string()
         .valid(...BACKGROUND_COLORS)
-        .required(),
+        .required()
+        .messages({
+            'any.only': 'A valid color was not selected',
+        }),
     type: Joi.string().valid('grocery').required(),
     createdAt: Joi.date().iso().required(),
     updatedAt: Joi.date().iso().required(),
-    ingredients: Joi.array().items(ingredientSchema).required(),
+    ingredients: Joi.array().items(ingredientSchema).required().messages({
+        'array.includes': 'One or more ingredients are invalid',
+    }),
 })
 
 export const groceryQuerySchema = Joi.object({

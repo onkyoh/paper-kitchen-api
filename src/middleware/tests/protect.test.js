@@ -11,8 +11,8 @@ describe('protect middleware', () => {
 
     it('should call next() if a valid token is provided', () => {
         const mockReq = {
-            cookies: {
-                access_token: 'valid_token',
+            headers: {
+                authorization: 'Bearer valid_token',
             },
         }
         const mockRes = {}
@@ -33,7 +33,7 @@ describe('protect middleware', () => {
 
     it('should call formatError with status code 401 if no token is provided', () => {
         const mockReq = {
-            cookies: {},
+            headers: {},
         }
         const mockRes = {}
         const mockNext = jest.fn()
@@ -51,8 +51,8 @@ describe('protect middleware', () => {
 
     it('should call formatError with status code 401 if an invalid token is provided', () => {
         const mockReq = {
-            cookies: {
-                access_token: 'invalid_token',
+            headers: {
+                authorization: 'Bearer invalid_token',
             },
         }
         const mockRes = {}

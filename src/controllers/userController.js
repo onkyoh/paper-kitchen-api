@@ -33,17 +33,14 @@ export const registerUser = async (req, res) => {
 
     if (newUser) {
         const token = generateToken(newUser.id)
-        res.cookie('access_token', token, {
-            httpOnly: true,
-            maxAge: 30 * 24 * 60 * 60 * 1000,
-            sameSite: 'none',
-            secure: process.env.NODE_ENV !== 'test',
-        })
 
         return res.status(201).send({
-            id: newUser.id,
-            username: newUser.username,
-            name: newUser.name,
+            user: {
+                id: newUser.id,
+                username: newUser.username,
+                name: newUser.name,
+            },
+            token,
         })
     }
     formatError(500, 'Error creating user')
@@ -69,17 +66,13 @@ export const loginUser = async (req, res) => {
     if (user && (await compare(req.body.password, user.password))) {
         const token = generateToken(user.id)
 
-        res.cookie('access_token', token, {
-            httpOnly: true,
-            maxAge: 30 * 24 * 60 * 60 * 1000,
-            sameSite: 'none',
-            secure: process.env.NODE_ENV !== 'test',
-        })
-
-        return res.status(200).send({
-            id: user.id,
-            username: user.username,
-            name: user.name,
+        return res.status(201).send({
+            user: {
+                id: user.id,
+                username: user.username,
+                name: user.name,
+            },
+            token,
         })
     }
     formatError(401, 'invalid credentials')
@@ -99,11 +92,4 @@ export const getUser = async (req, res) => {
         })
     }
     formatError(500, 'User not found')
-}
-
-export const logoutUser = async (req, res) => {
-    res.clearCookie('access_token', {
-        sameSite: 'none',
-        secure: true,
-    }).sendStatus(204)
 }
