@@ -22,25 +22,20 @@ describe('/users', () => {
 
     describe('/register', () => {
         describe('POST', () => {
-            test('should register a new user and set access token cookie', async () => {
+            test('should register a new user and return a token', async () => {
                 const response = await request
                     .post('/api/users/register')
                     .send(userData)
 
-                const cookies = response.headers['set-cookie']
-                expect(cookies).toBeDefined()
-
-                const accessTokenCookie = cookies.find((cookie) =>
-                    cookie.includes('access_token')
-                )
-                expect(accessTokenCookie).toBeDefined()
-
                 expect(response.status).toBe(201)
                 expect(response.body).toEqual(
                     expect.objectContaining({
-                        id: expect.any(Number),
-                        username: userData.username,
-                        name: userData.name,
+                        user: {
+                            id: expect.any(Number),
+                            username: userData.username,
+                            name: userData.name,
+                        },
+                        token: expect.any(String),
                     })
                 )
             })
@@ -58,26 +53,20 @@ describe('/users', () => {
 
     describe('/login', () => {
         describe('POST', () => {
-            test('should log in an existing user and set access token cookie', async () => {
+            test('should log in an existing user and return a token', async () => {
                 const response = await request.post('/api/users/login').send({
                     username: userData.username,
                     password: userData.password,
                 })
 
-                const cookies = response.headers['set-cookie']
-                expect(cookies).toBeDefined()
-
-                const accessTokenCookie = cookies.find((cookie) =>
-                    cookie.includes('access_token')
-                )
-                expect(accessTokenCookie).toBeDefined()
-
-                expect(response.status).toBe(200)
                 expect(response.body).toEqual(
                     expect.objectContaining({
-                        id: expect.any(Number),
-                        username: userData.username,
-                        name: userData.name,
+                        user: {
+                            id: expect.any(Number),
+                            username: userData.username,
+                            name: userData.name,
+                        },
+                        token: expect.any(String),
                     })
                 )
             })
@@ -94,24 +83,6 @@ describe('/users', () => {
         })
     })
 
-    describe('/logout', () => {
-        describe('POST', () => {
-            test('should remove the access token cookie', async () => {
-                const response = await request.post('/api/users/logout')
-
-                const cookies = response.headers['set-cookie']
-                expect(cookies).toBeDefined()
-
-                const accessTokenCookie = cookies.find((cookie) =>
-                    cookie.includes('access_token')
-                )
-
-                expect(accessTokenCookie).toMatch(/^access_token=;/)
-                expect(response.status).toBe(204)
-            })
-        })
-    })
-
     describe('/', () => {
         describe('GET', () => {
             test('should return the user object if the user is authenticated', async () => {
@@ -120,23 +91,17 @@ describe('/users', () => {
                     password: userData.password,
                 })
 
-                const response2 = await request.get('/api/users')
+                const response2 = await request
+                    .get('/api/users')
+                    .set('Authorization', `Bearer ${response.body.token}`)
 
                 expect(response2.status).toBe(200)
+
                 expect(response2.body).toEqual({
                     id: expect.any(Number),
                     username: userData.username,
                     name: userData.name,
                 })
-            })
-
-            test('should return an error if the user is not authenticated', async () => {
-                await request.post('/api/users/logout')
-
-                const response = await request.get('/api/users')
-
-                expect(response.status).toBe(401)
-                expect(response.text).toEqual('Unauthorized')
             })
         })
     })

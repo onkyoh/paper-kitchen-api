@@ -6,6 +6,7 @@ const request = supertest.agent(app)
 
 let testUsers = []
 let testRecipes = []
+let token
 
 describe('/join', () => {
     let url
@@ -20,7 +21,9 @@ describe('/join', () => {
             password: 'password123',
         })
 
-        owner = response.body
+        request.set('Authorization', `Bearer ${response.body.token}`)
+
+        owner = response.body.user
 
         testUsers.push(owner.username)
 
@@ -95,7 +98,9 @@ describe('/join', () => {
                         password: 'password123',
                     })
 
-                joiner = response.body
+                request.set('Authorization', `Bearer ${response.body.token}`)
+
+                joiner = response.body.user
 
                 testUsers.push(joiner.username)
             })
