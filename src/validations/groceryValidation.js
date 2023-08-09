@@ -10,13 +10,13 @@ export const updateGrocerySchema = Joi.object({
         .valid(...BACKGROUND_COLORS)
         .required()
         .messages({
-            'any.only': 'A valid color was not selected',
+            any: 'A valid color was not selected',
         }),
     type: Joi.string().valid('grocery').required(),
     createdAt: Joi.date().iso().required(),
     updatedAt: Joi.date().iso().required(),
     ingredients: Joi.array().items(ingredientSchema).required().messages({
-        'array.includes': 'One or more ingredients are invalid',
+        any: 'One or more ingredients are invalid',
     }),
 })
 

@@ -12,7 +12,10 @@ export const updateRecipeSchema = Joi.object({
     favourite: Joi.boolean().required(),
     color: Joi.string()
         .valid(...BACKGROUND_COLORS)
-        .required(),
+        .required()
+        .messages({
+            any: 'A valid color was not selected',
+        }),
     type: Joi.string().valid('recipe').required(),
     ingredientsQuery: Joi.array().items(Joi.string()),
     createdAt: Joi.date().iso().required(),
