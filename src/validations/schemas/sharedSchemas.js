@@ -40,6 +40,6 @@ export const createListSchema = Joi.object({
         .valid(...BACKGROUND_COLORS)
         .required()
         .messages({
-            'any.only': 'A valid color was not selected',
+            any: 'A valid color was not selected',
         }),
 })
