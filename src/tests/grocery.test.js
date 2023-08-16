@@ -98,7 +98,12 @@ describe('/groceryLists', () => {
                     .put(`/api/grocery-lists/${updatedGroceryList.id}`)
                     .send(updatedGroceryList)
                 expect(response.status).toBe(200)
-                expect(response.body).toEqual(updatedGroceryList)
+                expect(response.body).toEqual(
+                    expect.objectContaining({
+                        ...updatedGroceryList,
+                        updatedAt: expect.any(String),
+                    })
+                )
             })
 
             it('should return an error if the grocery list does not exist', async () => {

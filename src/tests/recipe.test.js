@@ -106,6 +106,7 @@ describe('/recipes', () => {
             expect(response3.body[0]).toEqual(
                 expect.objectContaining({
                     ...updatedRecipe,
+                    updatedAt: expect.any(String),
                     ingredientsQuery: ['Apple'],
                 })
             )
@@ -135,7 +136,12 @@ describe('/recipes', () => {
                     .put(`/api/recipes/${updatedRecipe.id}`)
                     .send(updatedRecipe)
                 expect(response.status).toBe(200)
-                expect(response.body).toEqual(updatedRecipe)
+                expect(response.body).toEqual(
+                    expect.objectContaining({
+                        ...updatedRecipe,
+                        updatedAt: expect.any(String),
+                    })
+                )
             })
 
             it('should return an error if the recipe does not exist', async () => {

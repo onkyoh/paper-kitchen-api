@@ -16,10 +16,10 @@ export const ingredientSchema = Joi.object({
 export const updateShareSchema = Joi.object({
     id: Joi.number().integer().required(),
     editingIds: Joi.array().items(Joi.number()).min(0).required().messages({
-        any: 'There was an error selecting users to update',
+        'any.only': 'There was an error selecting users to update',
     }),
     deletingIds: Joi.array().items(Joi.number()).min(0).required().messages({
-        any: 'There was an error selecting users to remove',
+        'any.only': 'There was an error selecting users to remove',
     }),
 })
 
@@ -40,6 +40,6 @@ export const createListSchema = Joi.object({
         .valid(...BACKGROUND_COLORS)
         .required()
         .messages({
-            any: 'A valid color was not selected',
+            'any.only': 'A valid color was not selected',
         }),
 })

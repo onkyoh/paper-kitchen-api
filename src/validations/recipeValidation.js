@@ -14,7 +14,7 @@ export const updateRecipeSchema = Joi.object({
         .valid(...BACKGROUND_COLORS)
         .required()
         .messages({
-            any: 'A valid color was not selected',
+            'any.only': 'A valid color was not selected',
         }),
     type: Joi.string().valid('recipe').required(),
     ingredientsQuery: Joi.array().items(Joi.string()),
