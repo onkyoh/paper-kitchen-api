@@ -79,7 +79,7 @@ export const join = async (req, res) => {
         const newShare = await prisma.userGroceryList.create({
             data: {
                 groceryListId: decodedUrl.groceryListId,
-                canEdit: false,
+                canEdit: true,
                 userId: req.userId,
             },
         })

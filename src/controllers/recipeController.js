@@ -154,6 +154,7 @@ export const updateRecipe = async (req, res) => {
         where: { id },
         data: {
             ...req.body,
+            updatedAt: undefined,
             ingredientsQuery: {
                 set: req.body.ingredients.map((ingredient) => ingredient.name),
             },

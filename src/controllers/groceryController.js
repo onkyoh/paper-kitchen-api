@@ -99,9 +99,36 @@ export const updateGroceryList = async (req, res) => {
         formatError(403, 'You are not authorized to update this grocery list')
     }
 
+    const oldGroceryList = await prisma.groceryList.findFirst({
+        where: { id },
+    })
+
+    let updatedIngredients = [...req.body.ingredients]
+    const tempIngredients = [
+        ...oldGroceryList.ingredients,
+        ...req.body.ingredients,
+    ]
+
+    if (
+        oldGroceryList &&
+        new Date(oldGroceryList.updatedAt) > new Date(req.body.updatedAt)
+    ) {
+        console.log('triggered')
+        updatedIngredients = tempIngredients.filter((ingredient, index) => {
+            const firstIndex = tempIngredients.findIndex(
+                (item) => item.name === ingredient.name
+            )
+            return firstIndex === index
+        })
+    }
+
     const updatedGroceryList = await prisma.groceryList.update({
         where: { id },
-        data: req.body,
+        data: {
+            ...req.body,
+            ingredients: updatedIngredients,
+            updatedAt: undefined,
+        },
     })
 
     if (updatedGroceryList) {
