@@ -7,7 +7,7 @@ export const getJoinInfo = async (req, res) => {
 
     let decodedUrl = null
 
-    const token = Buffer.from(url, 'base64').toString()
+    const token = Buffer.from(url, 'base64url').toString()
 
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
         if (err) {
@@ -27,7 +27,7 @@ export const join = async (req, res) => {
     const { url } = req.params
     let decodedUrl = null
 
-    const token = Buffer.from(url, 'base64').toString()
+    const token = Buffer.from(fromBase62(url), 'base64url').toString()
 
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
         if (err) {

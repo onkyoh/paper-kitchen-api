@@ -205,16 +205,17 @@ export const makeShareUrl = async (req, res) => {
         {
             title: req.body.title,
             owner: req.body.owner,
-            groceryListId: id,
+            recipeId: id,
         },
         process.env.JWT_SECRET,
         {
             expiresIn: '2h',
         }
     )
-    const url = Buffer.from(token).toString('base64')
 
-    return res.status(200).send(url)
+    const url = Buffer.from(token).toString('base64url')
+
+    return res.status(200).send(token)
 }
 
 export const getShare = async (req, res) => {
