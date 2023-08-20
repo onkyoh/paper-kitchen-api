@@ -215,7 +215,7 @@ export const makeShareUrl = async (req, res) => {
 
     const url = Buffer.from(token).toString('base64url')
 
-    return res.status(200).send(token)
+    return res.status(200).send(url)
 }
 
 export const getShare = async (req, res) => {
