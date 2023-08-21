@@ -25,7 +25,13 @@ describe('/recipes', () => {
     })
 
     afterAll(async () => {
-        await prisma.userRecipe.deleteMany()
+        await prisma.userRecipe.deleteMany({
+            where: {
+                recipeId: {
+                    in: testRecipes,
+                },
+            },
+        })
         await prisma.recipe.deleteMany({
             where: {
                 id: {

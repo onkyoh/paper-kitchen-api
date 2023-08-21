@@ -67,6 +67,19 @@ export const join = async (req, res) => {
         }
     })
 
+    //delete all url db entries older than 2 hours
+
+    const twoHoursAgo = new Date()
+    twoHoursAgo.setHours(twoHoursAgo.getHours() - 2)
+
+    await prisma.url.deleteMany({
+        where: {
+            createdAt: {
+                lt: twoHoursAgo,
+            },
+        },
+    })
+
     if ('recipeId' in decodedUrl) {
         const existingAccess = await prisma.userRecipe.findFirst({
             where: {
