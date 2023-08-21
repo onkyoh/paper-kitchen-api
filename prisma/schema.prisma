@@ -84,3 +84,8 @@ model UserGroceryList {
   groceryList     GroceryList      @relation(fields: [groceryListId], references: [id])
 }
 
+model urls {
+  id        String   @id @default(cuid())
+  jwtString String
+  createdAt DateTime @default(now())
+}

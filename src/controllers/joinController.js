@@ -7,9 +7,17 @@ export const getJoinInfo = async (req, res) => {
 
     let decodedUrl = null
 
-    const token = Buffer.from(url, 'base64url').toString()
+    const { jwtString } = await prisma.urls.findUnique({
+        where: {
+            id: url,
+        },
+    })
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (!jwtString) {
+        formatError(400, 'Invalid url')
+    }
+
+    jwt.verify(jwtString, process.env.JWT_SECRET, (err, decoded) => {
         if (err) {
             if (err.name === 'TokenExpiredError') {
                 formatError(400, 'Link has expired')
@@ -27,9 +35,17 @@ export const join = async (req, res) => {
     const { url } = req.params
     let decodedUrl = null
 
-    const token = Buffer.from(fromBase62(url), 'base64url').toString()
+    const { jwtString } = await prisma.urls.findUnique({
+        where: {
+            id: url,
+        },
+    })
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (!jwtString) {
+        formatError(400, 'Invalid url')
+    }
+
+    jwt.verify(jwtString, process.env.JWT_SECRET, (err, decoded) => {
         if (err) {
             if (err.name === 'TokenExpiredError') {
                 formatError(400, 'Link has expired')

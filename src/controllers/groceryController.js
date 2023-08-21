@@ -113,7 +113,6 @@ export const updateGroceryList = async (req, res) => {
         oldGroceryList &&
         new Date(oldGroceryList.updatedAt) > new Date(req.body.updatedAt)
     ) {
-        console.log('triggered')
         updatedIngredients = tempIngredients.filter((ingredient, index) => {
             const firstIndex = tempIngredients.findIndex(
                 (item) => item.name === ingredient.name
@@ -205,7 +204,7 @@ export const makeShareUrl = async (req, res) => {
         {
             title: req.body.title,
             owner: req.body.owner,
-            recipeId: id,
+            groceryListId: id,
         },
         process.env.JWT_SECRET,
         {
@@ -213,9 +212,17 @@ export const makeShareUrl = async (req, res) => {
         }
     )
 
-    const url = Buffer.from(token).toString('base64url')
+    const url = await prisma.urls.create({
+        data: {
+            jwtString: token,
+        },
+    })
 
-    return res.status(200).send(url)
+    if (url) {
+        return res.status(200).send(url.id)
+    }
+
+    return formatError(500, 'Error creating copy link')
 }
 
 export const getShare = async (req, res) => {

@@ -242,9 +242,18 @@ export const makeShareUrl = async (req, res) => {
             expiresIn: '2h',
         }
     )
-    const url = Buffer.from(token).toString('base64url')
 
-    return res.status(200).send(url)
+    const url = await prisma.urls.create({
+        data: {
+            jwtString: token,
+        },
+    })
+
+    if (url) {
+        return res.status(200).send(url.id)
+    }
+
+    return formatError(500, 'Error creating copy link')
 }
 
 export const getShare = async (req, res) => {
