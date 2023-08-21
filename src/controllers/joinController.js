@@ -7,6 +7,10 @@ export const getJoinInfo = async (req, res) => {
 
     let decodedUrl = null
 
+    if (/^c[0-9a-z]{24}$/.test(url) === false) {
+        formatError(400, 'Link is not valid')
+    }
+
     const { jwtString } = await prisma.urls.findUnique({
         where: {
             id: url,
@@ -14,7 +18,7 @@ export const getJoinInfo = async (req, res) => {
     })
 
     if (!jwtString) {
-        formatError(400, 'Invalid url')
+        formatError(400, 'Link is not valid')
     }
 
     jwt.verify(jwtString, process.env.JWT_SECRET, (err, decoded) => {
@@ -28,12 +32,18 @@ export const getJoinInfo = async (req, res) => {
             decodedUrl = { ...decoded }
         }
     })
+
     return res.status(200).send(decodedUrl)
 }
 
 export const join = async (req, res) => {
     const { url } = req.params
+
     let decodedUrl = null
+
+    if (/^c[0-9a-z]{24}$/.test(url) === false) {
+        formatError(400, 'Link is not valid')
+    }
 
     const { jwtString } = await prisma.urls.findUnique({
         where: {
@@ -42,7 +52,7 @@ export const join = async (req, res) => {
     })
 
     if (!jwtString) {
-        formatError(400, 'Invalid url')
+        formatError(400, 'Link is not valid')
     }
 
     jwt.verify(jwtString, process.env.JWT_SECRET, (err, decoded) => {
