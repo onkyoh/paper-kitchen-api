@@ -7,11 +7,11 @@ export const getJoinInfo = async (req, res) => {
 
     let decodedUrl = null
 
-    if (/^c[0-9a-z]{24}$/.test(url) === false) {
+    if (/^[0-9A-Fa-f]{8}$/.test(url) === false) {
         formatError(400, 'Link is not valid')
     }
 
-    const { jwtString } = await prisma.urls.findUnique({
+    const { jwtString } = await prisma.url.findUnique({
         where: {
             id: url,
         },
@@ -41,11 +41,11 @@ export const join = async (req, res) => {
 
     let decodedUrl = null
 
-    if (/^c[0-9a-z]{24}$/.test(url) === false) {
+    if (/^[0-9A-Fa-f]{8}$/.test(url) === false) {
         formatError(400, 'Link is not valid')
     }
 
-    const { jwtString } = await prisma.urls.findUnique({
+    const { jwtString } = await prisma.url.findUnique({
         where: {
             id: url,
         },

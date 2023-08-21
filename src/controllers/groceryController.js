@@ -1,5 +1,6 @@
 import prisma from '../config/db.js'
 import jwt from 'jsonwebtoken'
+import { randomBytes } from 'crypto'
 import {
     groceryQuerySchema,
     updateGrocerySchema,
@@ -212,14 +213,17 @@ export const makeShareUrl = async (req, res) => {
         }
     )
 
-    const url = await prisma.urls.create({
+    const url = randomBytes(4).toString('hex')
+
+    const urlData = await prisma.url.create({
         data: {
+            id: url,
             jwtString: token,
         },
     })
 
-    if (url) {
-        return res.status(200).send(url.id)
+    if (urlData) {
+        return res.status(200).send(url)
     }
 
     return formatError(500, 'Error creating copy link')
