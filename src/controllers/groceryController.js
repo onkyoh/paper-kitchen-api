@@ -1,5 +1,6 @@
 import prisma from '../config/db.js'
 import jwt from 'jsonwebtoken'
+import { randomBytes } from 'crypto'
 import {
     groceryQuerySchema,
     updateGrocerySchema,
@@ -113,7 +114,6 @@ export const updateGroceryList = async (req, res) => {
         oldGroceryList &&
         new Date(oldGroceryList.updatedAt) > new Date(req.body.updatedAt)
     ) {
-        console.log('triggered')
         updatedIngredients = tempIngredients.filter((ingredient, index) => {
             const firstIndex = tempIngredients.findIndex(
                 (item) => item.name === ingredient.name
@@ -205,7 +205,7 @@ export const makeShareUrl = async (req, res) => {
         {
             title: req.body.title,
             owner: req.body.owner,
-            recipeId: id,
+            groceryListId: id,
         },
         process.env.JWT_SECRET,
         {
@@ -213,9 +213,20 @@ export const makeShareUrl = async (req, res) => {
         }
     )
 
-    const url = Buffer.from(token).toString('base64url')
+    const url = randomBytes(4).toString('hex')
 
-    return res.status(200).send(url)
+    const urlData = await prisma.url.create({
+        data: {
+            id: url,
+            jwtString: token,
+        },
+    })
+
+    if (urlData) {
+        return res.status(200).send(url)
+    }
+
+    return formatError(500, 'Error creating copy link')
 }
 
 export const getShare = async (req, res) => {

@@ -25,7 +25,13 @@ describe('/groceryLists', () => {
     })
 
     afterAll(async () => {
-        await prisma.userGroceryList.deleteMany()
+        await prisma.userGroceryList.deleteMany({
+            where: {
+                groceryListId: {
+                    in: testGroceryLists,
+                },
+            },
+        })
         await prisma.groceryList.deleteMany({
             where: {
                 id: {

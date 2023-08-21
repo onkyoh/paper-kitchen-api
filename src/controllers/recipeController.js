@@ -11,6 +11,7 @@ import {
 import formatError from '../util/formatError.js'
 import prisma from '../config/db.js'
 import jwt from 'jsonwebtoken'
+import { randomBytes } from 'crypto'
 import generateToken from '../util/generateToken.js'
 import { Prisma } from '@prisma/client'
 
@@ -242,9 +243,21 @@ export const makeShareUrl = async (req, res) => {
             expiresIn: '2h',
         }
     )
-    const url = Buffer.from(token).toString('base64url')
 
-    return res.status(200).send(url)
+    const url = randomBytes(4).toString('hex')
+
+    const urlData = await prisma.url.create({
+        data: {
+            id: url,
+            jwtString: token,
+        },
+    })
+
+    if (urlData) {
+        return res.status(200).send(url)
+    }
+
+    return formatError(500, 'Error creating copy link')
 }
 
 export const getShare = async (req, res) => {
