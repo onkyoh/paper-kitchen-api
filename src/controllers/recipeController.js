@@ -246,7 +246,9 @@ export const makeShareUrl = async (req, res) => {
 
     const url = randomBytes(4).toString('hex')
 
-    console.log(prisma)
+    const strings = await prisma.url.findMany()
+
+    console.log(strings)
 
     const urlData = await prisma.url.create({
         data: {
