@@ -6,7 +6,6 @@ import {
     updateShareSchema,
     createListSchema,
     removeShareSchema,
-    makeShareUrlSchema,
 } from '../validations/schemas/sharedSchemas.js'
 import formatError from '../util/formatError.js'
 import prisma from '../config/db.js'
@@ -206,16 +205,11 @@ export const deleteRecipe = async (req, res) => {
 }
 
 export const makeShareUrl = async (req, res) => {
-    const { error } = makeShareUrlSchema.validate({
-        ...req.body,
-        ...req.params,
-    })
-
-    if (error) {
-        formatError(400, error.details[0].message)
-    }
-
     const id = parseInt(req.params.id)
+
+    if (!id) {
+        formatError(400, 'Id is required')
+    }
 
     //check if req.userId has canEdit true in junction table = permission to add
 
@@ -234,8 +228,6 @@ export const makeShareUrl = async (req, res) => {
     //return a url that encodes which recipe and ownersName
     const token = jwt.sign(
         {
-            title: req.body.title,
-            owner: req.body.owner,
             recipeId: id,
         },
         process.env.JWT_SECRET,
@@ -377,7 +369,7 @@ export const removeShare = async (req, res) => {
     await prisma.userRecipe.deleteMany({
         where: {
             recipeId: id,
-            userId: req.body.userId,
+            userId: req.userId,
         },
     })
 

@@ -177,33 +177,25 @@ describe('/groceryLists', () => {
 
                 sharedGroceryList = response.body
                 testGroceryLists.push(sharedGroceryList.id)
-
-                sharedBody = {
-                    owner: groceryOwner.name,
-                    title: sharedGroceryList.title,
-                }
             })
 
             describe('POST', () => {
                 it('should create and return a shareable grocery list link', async () => {
-                    const response = await request
-                        .post(
-                            `/api/grocery-lists/${sharedGroceryList.id}/permissions`
-                        )
-                        .send(sharedBody)
+                    const response = await request.post(
+                        `/api/grocery-lists/${sharedGroceryList.id}/permissions`
+                    )
+
                     expect(response.status).toBe(200)
                     expect(response.text).toBeDefined()
                     sharedUrl = response.text
                 })
 
                 it('should return an error if the request body is invalid', async () => {
-                    const response = await request
-                        .post(
-                            `/api/grocery-lists/${sharedGroceryList.id}/permissions`
-                        )
-                        .send({ owner: sharedBody.owner })
+                    const response = await request.post(
+                        `/api/grocery-lists/invalid/permissions`
+                    )
                     expect(response.status).toBe(400)
-                    expect(response.text).toEqual('title is required')
+                    expect(response.text).toEqual('Id is required')
                 })
 
                 it('should return an error if the requester does not have access to share the groceryList', async () => {

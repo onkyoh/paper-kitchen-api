@@ -33,7 +33,31 @@ export const getJoinInfo = async (req, res) => {
         }
     })
 
-    return res.status(200).send(decodedUrl)
+    if ('recipeId' in decodedUrl) {
+        const recipe = await prisma.recipe.findUnique({
+            where: {
+                id: decodedUrl.recipeId,
+            },
+        })
+
+        if (!recipe) {
+            formatError(400, 'Recipe not found')
+        }
+
+        return res.status(200).send(recipe)
+    } else {
+        const groceryList = await prisma.groceryList.findUnique({
+            where: {
+                id: decodedUrl.groceryListId,
+            },
+        })
+
+        if (!groceryList) {
+            formatError(400, 'Grocery list not found')
+        }
+
+        return res.status(200).send(groceryList)
+    }
 }
 
 export const join = async (req, res) => {

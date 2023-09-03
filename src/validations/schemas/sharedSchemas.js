@@ -28,12 +28,6 @@ export const removeShareSchema = Joi.object({
     userId: Joi.number().integer().required(),
 })
 
-export const makeShareUrlSchema = Joi.object({
-    id: Joi.number().integer().required(),
-    title: Joi.string().required(),
-    owner: Joi.string().required(),
-})
-
 export const createListSchema = Joi.object({
     title: Joi.string().required(),
     color: Joi.string()
