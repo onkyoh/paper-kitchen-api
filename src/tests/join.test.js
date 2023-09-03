@@ -37,12 +37,9 @@ describe('/join', () => {
         recipe = response2.body
         testRecipes.push(recipe.id)
 
-        const response3 = await request
-            .post(`/api/recipes/${recipe.id}/permissions`)
-            .send({
-                owner: owner.name,
-                title: recipe.title,
-            })
+        const response3 = await request.post(
+            `/api/recipes/${recipe.id}/permissions`
+        )
 
         url = response3.text
     })
@@ -80,9 +77,7 @@ describe('/join', () => {
                 expect(response.status).toBe(200)
                 expect(response.body).toEqual(
                     expect.objectContaining({
-                        recipeId: recipe.id,
-                        owner: owner.name,
-                        title: recipe.title,
+                        ...recipe,
                     })
                 )
             })
