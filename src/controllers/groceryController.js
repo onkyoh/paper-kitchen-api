@@ -1,6 +1,4 @@
 import prisma from '../config/db.js'
-import jwt from 'jsonwebtoken'
-import { randomBytes } from 'crypto'
 import {
     groceryQuerySchema,
     updateGrocerySchema,
@@ -11,7 +9,7 @@ import {
     removeShareSchema,
 } from '../validations/schemas/sharedSchemas.js'
 import formatError from '../util/formatError.js'
-import generateToken from '../util/generateToken.js'
+import encodeUrl from '../util/encodeUrl.js'
 
 export const getGroceryLists = async (req, res) => {
     const { error } = groceryQuerySchema.validate(req.query)
@@ -42,6 +40,32 @@ export const getGroceryLists = async (req, res) => {
     }
     formatError(500, 'Error getting grocery lists')
 }
+
+export const getGroceryList = async (req, res) => {
+    const id = parseInt(req.params.id)
+
+    if (!id) {
+        formatError(400, 'Invalid grocery list id')
+    }
+
+    const groceryList = await prisma.groceryList.findFirst({
+        where: {
+            id,
+            userGroceryLists: {
+                some: {
+                    userId: req.userId,
+                },
+            },
+        },
+    })
+
+    if (groceryList) {
+        return res.status(200).send(groceryList)
+    }
+
+    formatError(401, 'Unauthorized')
+}
+
 export const createGroceryList = async (req, res) => {
     const { error } = createListSchema.validate(req.body)
 
@@ -194,27 +218,9 @@ export const makeShareUrl = async (req, res) => {
         formatError(403, 'You are not authorized to share this grocery list')
     }
 
-    //return a url that encodes which grocery lists and ownersName
-    const token = jwt.sign(
-        {
-            groceryListId: id,
-        },
-        process.env.JWT_SECRET,
-        {
-            expiresIn: '2h',
-        }
-    )
+    const url = await encodeUrl({ groceryListId: id })
 
-    const url = randomBytes(4).toString('hex')
-
-    const urlData = await prisma.url.create({
-        data: {
-            id: url,
-            jwtString: token,
-        },
-    })
-
-    if (urlData) {
+    if (url) {
         return res.status(200).send(url)
     }
 

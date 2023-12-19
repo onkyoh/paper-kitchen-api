@@ -2,6 +2,7 @@ import express from 'express'
 
 import {
     getRecipes,
+    getRecipe,
     createRecipe,
     updateRecipe,
     deleteRecipe,
@@ -14,7 +15,7 @@ import {
 const router = express.Router()
 
 router.route('/').get(getRecipes).post(createRecipe)
-router.route('/:id').put(updateRecipe).delete(deleteRecipe)
+router.route('/:id').get(getRecipe).put(updateRecipe).delete(deleteRecipe)
 router
     .route('/:id/permissions')
     .get(getShare)

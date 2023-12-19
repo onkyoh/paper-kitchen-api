@@ -1,37 +1,11 @@
 import prisma from '../config/db.js'
-import jwt from 'jsonwebtoken'
 import formatError from '../util/formatError.js'
+import decodeUrl from '../util/decodeUrl.js'
 
 export const getJoinInfo = async (req, res) => {
     const { url } = req.params
 
-    let decodedUrl = null
-
-    if (/^[0-9A-Fa-f]{8}$/.test(url) === false) {
-        formatError(400, 'Link is not valid')
-    }
-
-    const { jwtString } = await prisma.url.findUnique({
-        where: {
-            id: url,
-        },
-    })
-
-    if (!jwtString) {
-        formatError(400, 'Link is not valid')
-    }
-
-    jwt.verify(jwtString, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            if (err.name === 'TokenExpiredError') {
-                formatError(400, 'Link has expired')
-            } else {
-                formatError(400, 'Link is not valid')
-            }
-        } else {
-            decodedUrl = { ...decoded }
-        }
-    })
+    let decodedUrl = await decodeUrl(url)
 
     if ('recipeId' in decodedUrl) {
         const recipe = await prisma.recipe.findUnique({
@@ -63,46 +37,7 @@ export const getJoinInfo = async (req, res) => {
 export const join = async (req, res) => {
     const { url } = req.params
 
-    let decodedUrl = null
-
-    if (/^[0-9A-Fa-f]{8}$/.test(url) === false) {
-        formatError(400, 'Link is not valid')
-    }
-
-    const { jwtString } = await prisma.url.findUnique({
-        where: {
-            id: url,
-        },
-    })
-
-    if (!jwtString) {
-        formatError(400, 'Link is not valid')
-    }
-
-    jwt.verify(jwtString, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            if (err.name === 'TokenExpiredError') {
-                formatError(400, 'Link has expired')
-            } else {
-                formatError(400, 'Link is not valid')
-            }
-        } else {
-            decodedUrl = { ...decoded }
-        }
-    })
-
-    //delete all url db entries older than 2 hours
-
-    const twoHoursAgo = new Date()
-    twoHoursAgo.setHours(twoHoursAgo.getHours() - 2)
-
-    await prisma.url.deleteMany({
-        where: {
-            createdAt: {
-                lt: twoHoursAgo,
-            },
-        },
-    })
+    let decodedUrl = await decodeUrl(url)
 
     if ('recipeId' in decodedUrl) {
         const existingAccess = await prisma.userRecipe.findFirst({

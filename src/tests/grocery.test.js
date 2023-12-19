@@ -11,6 +11,7 @@ describe('/groceryLists', () => {
     const groceryOwner = {
         name: 'John Doe',
         username: 'groceryTest',
+        email: 'groceryemail@fake.ca',
         password: 'password123',
     }
 
@@ -165,6 +166,7 @@ describe('/groceryLists', () => {
             const groceryGuest = {
                 name: 'Shared User',
                 username: 'groceryListTestShared',
+                email: 'sharedgroceryemail@fake.ca',
                 password: 'password123',
             }
 

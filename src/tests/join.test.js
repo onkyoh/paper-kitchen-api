@@ -17,6 +17,7 @@ describe('/join', () => {
     beforeAll(async () => {
         const response = await request.post('/api/users/register').send({
             name: 'Owner',
+            email: 'owneremail@fake.ca',
             username: 'joinTestOwner',
             password: 'password123',
         })
@@ -96,6 +97,7 @@ describe('/join', () => {
                     .send({
                         name: 'Joiner',
                         username: 'joinTestJoiner',
+                        email: 'joineremail@fake.ca',
                         password: 'password123',
                     })
 

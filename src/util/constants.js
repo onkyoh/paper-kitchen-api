@@ -8,3 +8,5 @@ export const BACKGROUND_COLORS = [
     'bg-teal-400',
     'bg-orange-400',
 ]
+
+export const BASE_URL = process.env.ORIGIN || 'https://paperkitchen.ca'

@@ -18,6 +18,7 @@ describe('/users', () => {
         username: 'testuser',
         password: 'testpassword',
         name: 'Test User',
+        email: 'testuser@example.com',
     }
 
     describe('/register', () => {
@@ -34,6 +35,11 @@ describe('/users', () => {
                             id: expect.any(Number),
                             username: userData.username,
                             name: userData.name,
+                            email: expect.objectContaining({
+                                // Updated to expect email object
+                                address: expect.any(String),
+                                isAuthenticated: expect.any(Boolean),
+                            }),
                         },
                         token: expect.any(String),
                     })
@@ -65,6 +71,11 @@ describe('/users', () => {
                             id: expect.any(Number),
                             username: userData.username,
                             name: userData.name,
+                            email: expect.objectContaining({
+                                // Updated to expect email object
+                                address: expect.any(String),
+                                isAuthenticated: expect.any(Boolean),
+                            }),
                         },
                         token: expect.any(String),
                     })
@@ -101,6 +112,11 @@ describe('/users', () => {
                     id: expect.any(Number),
                     username: userData.username,
                     name: userData.name,
+                    email: expect.objectContaining({
+                        // Updated to expect email object
+                        address: expect.any(String),
+                        isAuthenticated: expect.any(Boolean),
+                    }),
                 })
             })
         })

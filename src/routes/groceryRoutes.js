@@ -3,6 +3,7 @@ import express from 'express'
 import {
     createGroceryList,
     getGroceryLists,
+    getGroceryList,
     updateGroceryList,
     deleteGroceryList,
     updateShare,
@@ -14,7 +15,11 @@ import {
 const router = express.Router()
 
 router.route('/').get(getGroceryLists).post(createGroceryList)
-router.route('/:id').put(updateGroceryList).delete(deleteGroceryList)
+router
+    .route('/:id')
+    .get(getGroceryList)
+    .put(updateGroceryList)
+    .delete(deleteGroceryList)
 router
     .route('/:id/permissions')
     .get(getShare)
