@@ -8,11 +8,8 @@ import {
     removeShareSchema,
 } from '../validations/schemas/sharedSchemas.js'
 import formatError from '../util/formatError.js'
+import encodeUrl from '../util/encodeUrl.js'
 import prisma from '../config/db.js'
-import jwt from 'jsonwebtoken'
-import { randomBytes } from 'crypto'
-import generateToken from '../util/generateToken.js'
-import { Prisma } from '@prisma/client'
 
 export const getRecipes = async (req, res) => {
     const { error } = recipesQuerySchema.validate(req.query)
@@ -90,6 +87,32 @@ export const getRecipes = async (req, res) => {
     }
     formatError(500, 'Error getting recipes')
 }
+
+export const getRecipe = async (req, res) => {
+    const id = parseInt(req.params.id)
+
+    if (!id) {
+        formatError(400, 'Invalid recipe id')
+    }
+
+    const recipe = await prisma.recipe.findFirst({
+        where: {
+            id,
+            userRecipes: {
+                some: {
+                    userId: req.userId,
+                },
+            },
+        },
+    })
+
+    if (recipe) {
+        return res.status(200).send(recipe)
+    }
+
+    formatError(401, 'Unauthorized')
+}
+
 export const createRecipe = async (req, res) => {
     const { error } = createListSchema.validate(req.body)
 
@@ -225,27 +248,9 @@ export const makeShareUrl = async (req, res) => {
         formatError(403, 'You are not authorized to share this recipe')
     }
 
-    //return a url that encodes which recipe and ownersName
-    const token = jwt.sign(
-        {
-            recipeId: id,
-        },
-        process.env.JWT_SECRET,
-        {
-            expiresIn: '2h',
-        }
-    )
+    const url = await encodeUrl({ recipeId: id })
 
-    const url = randomBytes(4).toString('hex')
-
-    const urlData = await prisma.url.create({
-        data: {
-            id: url,
-            jwtString: token,
-        },
-    })
-
-    if (urlData) {
+    if (url) {
         return res.status(200).send(url)
     }
 

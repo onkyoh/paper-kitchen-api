@@ -1,14 +1,20 @@
 import Joi from 'joi'
 
-const createUserSchema = Joi.object({
-    username: Joi.string().alphanum().min(3).max(30).required(),
-    name: Joi.string().min(1).max(40).required(),
-    password: Joi.string().min(6).max(30).required(),
-})
+const usernameSchema = Joi.string().alphanum().min(3).max(30).required()
+const nameSchema = Joi.string().min(1).max(40).required()
+const passwordSchema = Joi.string().min(6).max(30).required()
+const emailSchema = Joi.string().email().required()
 
 const loginUserSchema = Joi.object({
-    username: Joi.string().alphanum().min(3).max(30).required(),
-    password: Joi.string().required(),
+    username: usernameSchema,
+    password: passwordSchema,
 })
 
-export { createUserSchema, loginUserSchema }
+const createUserSchema = Joi.object({
+    username: usernameSchema,
+    name: nameSchema,
+    password: passwordSchema,
+    email: emailSchema,
+})
+
+export { createUserSchema, loginUserSchema, emailSchema, passwordSchema }

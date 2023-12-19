@@ -10,6 +10,7 @@ let testRecipes = []
 describe('/recipes', () => {
     const recipeOwner = {
         name: 'John Doe',
+        email: 'reciperemail@fake.ca',
         username: 'recipeTest',
         password: 'password123',
     }
@@ -203,6 +204,7 @@ describe('/recipes', () => {
             const recipeGuest = {
                 name: 'Shared User',
                 username: 'recipeTestShared',
+                email: 'sharedrecipeemail@fake.ca',
                 password: 'password123',
             }
 
