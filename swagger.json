@@ -1,0 +1,1512 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "PaperKitchen API",
+        "description": "API for paperkitchen.ca",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://paperkitchen.adaptable.app/api",
+            "description": "Production server for PaperKitchen"
+        }
+    ],
+    "tags": [
+        {
+            "name": "Users",
+            "description": "Operations related to users"
+        },
+        {
+            "name": "Grocery Lists",
+            "description": "Operations related to grocery lists"
+        },
+        {
+            "name": "Recipes",
+            "description": "Operations related to recipes"
+        }
+    ],
+    "paths": {
+        "/users": {
+            "get": {
+                "tags": ["Users"],
+                "summary": "Get the current user's information",
+                "description": "Get the current user's information",
+                "security": [{ "ApiKeyAuth": [] }],
+                "responses": {
+                    "200": {
+                        "description": "User object",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer",
+                                            "description": "User ID"
+                                        },
+                                        "username": {
+                                            "type": "string",
+                                            "description": "Username"
+                                        },
+                                        "name": {
+                                            "type": "string",
+                                            "description": "Name"
+                                        },
+                                        "email": {
+                                            "type": "object",
+                                            "properties": {
+                                                "address": {
+                                                    "type": "string",
+                                                    "format": "email",
+                                                    "description": "Email address"
+                                                },
+                                                "isAuthenticated": {
+                                                    "type": "boolean",
+                                                    "description": "Whether the email is authenticated"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid or missing token"
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                }
+            }
+        },
+        "/users/register": {
+            "post": {
+                "tags": ["Users"],
+                "summary": "Register a new user",
+                "description": "Register a new user",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/User"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "User created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        },
+                                        "token": {
+                                            "type": "string",
+                                            "description": "JWT token for authentication"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Username or email already taken",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/users/login": {
+            "post": {
+                "tags": ["Users"],
+                "summary": "Login an existing user",
+                "description": "Login an existing user",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "username": {
+                                        "type": "string",
+                                        "minLength": 3,
+                                        "maxLength": 30
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "minLength": 6,
+                                        "maxLength": 30
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        },
+                                        "token": {
+                                            "type": "string",
+                                            "description": "JWT token for authentication"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Invalid credentials"
+                    }
+                }
+            }
+        },
+        "/users/forgot-password": {
+            "post": {
+                "tags": ["Users"],
+                "summary": "Send a forgot password email to the user",
+                "description": "Send a forgot password email to the user",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Reset password email sent"
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User with that email not found"
+                    }
+                }
+            }
+        },
+        "/users/reset-password/{url}": {
+            "patch": {
+                "tags": ["Users"],
+                "summary": "Reset the user's password",
+                "description": "Reset the user's password",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "url",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "password": {
+                                        "type": "string",
+                                        "minLength": 6,
+                                        "maxLength": 30
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Password reset successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        },
+                                        "token": {
+                                            "type": "string",
+                                            "description": "JWT token for authentication"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                }
+            }
+        },
+        "/users/add-email": {
+            "post": {
+                "tags": ["Users"],
+                "summary": "Send an authentication email to the user",
+                "description": "Send an authentication email to the user",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Authentication email sent"
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                }
+            }
+        },
+        "/users/authenticate-email/{url}": {
+            "patch": {
+                "tags": ["Users"],
+                "summary": "Authenticate the user's email",
+                "description": "Authenticate the user's email",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "url",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Email authenticated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "user": {
+                                            "$ref": "#/components/schemas/User"
+                                        },
+                                        "token": {
+                                            "type": "string",
+                                            "description": "JWT token for authentication"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                }
+            }
+        },
+        "/grocery-lists": {
+            "get": {
+                "tags": ["Grocery Lists"],
+                "summary": "Get all grocery lists for the current user",
+                "description": "Get all grocery lists for the current user",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "page",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "pageSize",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "security": [{ "ApiKeyAuth": [] }],
+                "responses": {
+                    "200": {
+                        "description": "Array of grocery lists",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/GroceryList"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error getting grocery lists"
+                    }
+                }
+            },
+            "post": {
+                "tags": ["Grocery Lists"],
+                "summary": "Create a new grocery list",
+                "description": "Create a new grocery list",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateGroceryList"
+                            }
+                        }
+                    }
+                },
+                "security": [{ "ApiKeyAuth": [] }],
+                "responses": {
+                    "201": {
+                        "description": "Grocery list created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GroceryList"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error creating grocery list"
+                    }
+                }
+            }
+        },
+        "/grocery-lists/{id}": {
+            "get": {
+                "tags": ["Grocery Lists"],
+                "summary": "Get a grocery list by ID",
+                "description": "Get a grocery list by ID",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "security": [{ "ApiKeyAuth": [] }],
+                "responses": {
+                    "200": {
+                        "description": "Grocery list object",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GroceryList"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Grocery list not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": ["Grocery Lists"],
+                "summary": "Update a grocery list",
+                "description": "Update a grocery list",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateGroceryList"
+                            }
+                        }
+                    }
+                },
+                "security": [{ "ApiKeyAuth": [] }],
+                "responses": {
+                    "200": {
+                        "description": "Grocery list updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GroceryList"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "You are not authorized to update this grocery list"
+                    },
+                    "500": {
+                        "description": "Error updating grocery list"
+                    }
+                }
+            },
+            "delete": {
+                "tags": ["Grocery Lists"],
+                "summary": "Delete a grocery list",
+                "description": "Delete a grocery list",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "security": [{ "ApiKeyAuth": [] }],
+                "responses": {
+                    "200": {
+                        "description": "Grocery list deleted successfully"
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "You are not authorized to delete this grocery list"
+                    },
+                    "500": {
+                        "description": "Error deleting grocery list"
+                    }
+                }
+            }
+        },
+        "/grocery-lists/{id}/permissions": {
+            "get": {
+                "tags": ["Grocery Lists"],
+                "summary": "Get the permissions for a grocery list",
+                "description": "Get the permissions for a grocery list",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "security": [{ "ApiKeyAuth": [] }],
+                "responses": {
+                    "200": {
+                        "description": "Array of user permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/UserPermission"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized"
+                    }
+                }
+            },
+            "put": {
+                "tags": ["Grocery Lists"],
+                "summary": "Update the permissions for a grocery list",
+                "description": "Update the permissions for a grocery list",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateShare"
+                            }
+                        }
+                    }
+                },
+                "security": [{ "ApiKeyAuth": [] }],
+                "responses": {
+                    "200": {
+                        "description": "Permissions updated successfully"
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized"
+                    }
+                }
+            },
+            "post": {
+                "tags": ["Grocery Lists"],
+                "summary": "Create a share URL for a grocery list",
+                "description": "Create a share URL for a grocery list",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "security": [{ "ApiKeyAuth": [] }],
+                "responses": {
+                    "200": {
+                        "description": "Share URL created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "You are not authorized to share this grocery list"
+                    },
+                    "500": {
+                        "description": "Error creating share URL"
+                    }
+                }
+            },
+            "delete": {
+                "tags": ["Grocery Lists"],
+                "summary": "Remove self from a grocery list",
+                "description": "Remove self from a grocery list",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RemoveShare"
+                            }
+                        }
+                    }
+                },
+                "security": [{ "ApiKeyAuth": [] }],
+                "responses": {
+                    "200": {
+                        "description": "User removed successfully"
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/recipes": {
+            "get": {
+                "tags": ["Recipes"],
+                "summary": "Get all recipes",
+                "description": "Retrieve a list of recipes based on query parameters.",
+                "security": [{ "ApiKeyAuth": [] }],
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "page",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "pageSize",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of recipes",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Recipe"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error"
+                    }
+                }
+            },
+            "post": {
+                "tags": ["Recipes"],
+                "summary": "Create a recipe",
+                "description": "Create a new recipe with the given details.",
+                "security": [{ "ApiKeyAuth": [] }],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CreateRecipe"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Recipe created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Recipe"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error creating recipe"
+                    }
+                }
+            }
+        },
+        "/recipes/{id}": {
+            "get": {
+                "tags": ["Recipes"],
+                "summary": "Get a single recipe",
+                "description": "Retrieve a recipe by its ID.",
+                "security": [{ "ApiKeyAuth": [] }],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Recipe ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Recipe object",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Recipe"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    },
+                    "404": {
+                        "description": "Recipe not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": ["Recipes"],
+                "summary": "Update a recipe",
+                "description": "Update a recipe's details.",
+                "security": [{ "ApiKeyAuth": [] }],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Recipes/UpdateRecipe"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Recipe updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Recipe"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    },
+                    "403": {
+                        "description": "Unauthorized to update the recipe"
+                    },
+                    "404": {
+                        "description": "Recipe not found"
+                    }
+                }
+            },
+            "delete": {
+                "tags": ["Recipes"],
+                "summary": "Delete a recipe",
+                "description": "Delete a recipe by its ID.",
+                "security": [{ "ApiKeyAuth": [] }],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Recipe deleted successfully"
+                    },
+                    "403": {
+                        "description": "Unauthorized to delete the recipe"
+                    },
+                    "404": {
+                        "description": "Recipe not found"
+                    }
+                }
+            }
+        },
+        "/recipes/{id}/permissions": {
+            "get": {
+                "tags": ["Recipes"],
+                "summary": "Get sharing permissions for a recipe",
+                "description": "Retrieve sharing permissions for a recipe by its ID.",
+                "security": [{ "ApiKeyAuth": [] }],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        },
+                        "description": "Recipe ID"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Permissions retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/UserPermission"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized to view permissions"
+                    },
+                    "404": {
+                        "description": "Recipe not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": ["Recipes"],
+                "summary": "Update sharing permissions for a recipe",
+                "description": "Update the sharing permissions of a recipe.",
+                "security": [{ "ApiKeyAuth": [] }],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UpdateSharePermissions"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Permissions updated successfully"
+                    },
+                    "400": {
+                        "description": "Validation error"
+                    },
+                    "403": {
+                        "description": "Unauthorized to update permissions"
+                    },
+                    "404": {
+                        "description": "Recipe not found"
+                    }
+                }
+            },
+            "post": {
+                "tags": ["Recipes"],
+                "summary": "Create a share URL for a recipe",
+                "description": "Create a shareable URL for a recipe.",
+                "security": [{ "ApiKeyAuth": [] }],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Share URL created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Unauthorized to create share URL"
+                    },
+                    "404": {
+                        "description": "Recipe not found"
+                    }
+                }
+            },
+            "delete": {
+                "tags": ["Recipes"],
+                "summary": "Remove self from recipe sharing",
+                "description": "Remove self from the sharing list of a recipe.",
+                "security": [{ "ApiKeyAuth": [] }],
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "id",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully removed from sharing"
+                    },
+                    "403": {
+                        "description": "Unauthorized to remove self from sharing"
+                    },
+                    "404": {
+                        "description": "Recipe not found"
+                    }
+                }
+            }
+        },
+        "/join/{url}": {
+            "get": {
+                "tags": ["Join"],
+                "summary": "Get information about a recipe or grocery list",
+                "description": "Retrieves detailed information about a recipe or grocery list based on a unique URL identifier.",
+                "parameters": [
+                    {
+                        "name": "url",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "The unique URL identifier for the resource."
+                    }
+                ],
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful retrieval of resource details.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "oneOf": [
+                                        {
+                                            "$ref": "#/components/schemas/Recipe"
+                                        },
+                                        {
+                                            "$ref": "#/components/schemas/GroceryList"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Resource not found or error in the URL.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message explaining the issue."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": ["Join"],
+                "summary": "Join a recipe or grocery list",
+                "description": "Allows a user to join a recipe or grocery list based on a unique URL identifier.",
+                "parameters": [
+                    {
+                        "name": "url",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        },
+                        "description": "The unique URL identifier for the resource to join."
+                    }
+                ],
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Successfully joined the resource.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "string",
+                                    "example": "/recipes or /grocery-lists"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Already joined or error in the URL.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message explaining why joining failed."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error or unable to join.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "description": "Error message explaining the server issue."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "User": {
+                "type": "object",
+                "required": ["username", "name", "password", "email"],
+                "properties": {
+                    "username": {
+                        "type": "string",
+                        "minLength": 3,
+                        "maxLength": 30
+                    },
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40
+                    },
+                    "password": {
+                        "type": "string",
+                        "minLength": 6,
+                        "maxLength": 30
+                    },
+                    "email": { "type": "string", "format": "email" }
+                }
+            },
+            "GroceryList": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "color": { "type": "string" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" },
+                    "ingredients": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/Ingredient" }
+                    }
+                }
+            },
+            "CreateGroceryList": {
+                "type": "object",
+                "required": ["title", "color"],
+                "properties": {
+                    "title": { "type": "string" },
+                    "color": { "type": "string" }
+                }
+            },
+            "UpdateGroceryList": {
+                "type": "object",
+                "required": ["title", "color", "ingredients"],
+                "properties": {
+                    "title": { "type": "string" },
+                    "color": { "type": "string" },
+                    "ingredients": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/Ingredient" }
+                    }
+                }
+            },
+            "Ingredient": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string" },
+                    "name": { "type": "string" },
+                    "amount": { "type": "string" },
+                    "unit": { "type": "string" }
+                }
+            },
+            "Recipe": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "integer" },
+                    "ownerId": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "serves": { "type": "integer" },
+                    "cookingTime": { "type": "integer" },
+                    "cost": { "type": "integer" },
+                    "favourite": { "type": "boolean" },
+                    "color": { "type": "string" },
+                    "type": { "type": "string" },
+                    "createdAt": { "type": "string", "format": "date-time" },
+                    "updatedAt": { "type": "string", "format": "date-time" },
+                    "instructions": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/Instruction" }
+                    },
+                    "ingredients": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/Ingredient" }
+                    }
+                }
+            },
+            "CreateRecipe": {
+                "type": "object",
+                "properties": {
+                    "title": { "type": "string" },
+                    "color": { "type": "string" }
+                }
+            },
+            "UpdateRecipe": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "integer" },
+                    "title": { "type": "string" },
+                    "serves": { "type": "integer" },
+                    "cookingTime": { "type": "integer" },
+                    "cost": { "type": "integer" },
+                    "favourite": { "type": "boolean" },
+                    "color": { "type": "string" },
+                    "instructions": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/Instruction" }
+                    },
+                    "ingredients": {
+                        "type": "array",
+                        "items": { "$ref": "#/components/schemas/Ingredient" }
+                    }
+                }
+            },
+            "Instruction": {
+                "type": "object",
+                "properties": {
+                    "id": { "type": "string" },
+                    "text": { "type": "string" }
+                }
+            },
+            "UserPermission": {
+                "type": "object",
+                "properties": {
+                    "userId": { "type": "integer" },
+                    "canEdit": { "type": "boolean" },
+                    "name": { "type": "string" }
+                }
+            },
+            "UpdateShare": {
+                "type": "object",
+                "properties": {
+                    "editingIds": {
+                        "type": "array",
+                        "items": { "type": "integer" }
+                    },
+                    "deletingIds": {
+                        "type": "array",
+                        "items": { "type": "integer" }
+                    }
+                },
+                "required": ["editingIds", "deletingIds"]
+            },
+            "RemoveShare": {
+                "type": "object",
+                "properties": {
+                    "userId": { "type": "integer" }
+                },
+                "required": ["userId"]
+            }
+        }
+    }
+}

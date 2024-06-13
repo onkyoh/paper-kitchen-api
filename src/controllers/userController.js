@@ -136,7 +136,7 @@ export const getUser = async (req, res) => {
             },
         })
     }
-    formatError(500, 'User not found')
+    formatError(404, 'User not found')
 }
 
 export const sendForgotPassword = async (req, res) => {
@@ -244,7 +244,7 @@ export const sendAuthenticationEmail = async (req, res) => {
         formatError(500, 'Error creating url')
     }
 
-    await sendAuth(url, req.body.email, user.username)
+    await sendAuthentication(url, req.body.email, user.username)
     return res.status(200).send('Authentication email sent')
 }
 
