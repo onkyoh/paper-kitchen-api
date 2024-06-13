@@ -25,10 +25,14 @@ app.use(
 app.use(helmet())
 app.use(express.json())
 //routes
-app.use('/api/users', userRouter)
-app.use('/api/recipes', protect, recipeRouter)
-app.use('/api/grocery-lists', protect, groceryRouter)
-app.use('/api/join', joinRouter)
+const apiRouter = express.Router()
+
+apiRouter.use('/users', userRouter)
+apiRouter.use('/recipes', protect, recipeRouter)
+apiRouter.use('/grocery-lists', protect, groceryRouter)
+apiRouter.use('/join', joinRouter)
+
+app.use('/api', apiRouter)
 //middlware
 app.use(notFoundHandler)
 app.use(errorHandler)
