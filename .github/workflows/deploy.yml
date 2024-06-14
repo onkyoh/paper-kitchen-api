@@ -20,7 +20,15 @@ jobs:
 
             - name: Install dependencies
               run: npm install
+
             - name: Apply all pending migrations to the database
               run: npx prisma migrate deploy
               env:
                   DATABASE_URL: ${{ secrets.DATABASE_URL }}
+                  SHADOW_DATABASE_URL: ${{ secrets.SHADOW_DATABASE_URL }}
+
+                  PORT: 5000
+                  JWT_SECRET: 'secret'
+
+                  AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
+                  AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}

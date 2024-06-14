@@ -59,13 +59,17 @@ export const join = async (req, res) => {
         return formatError(400, 'Already joined')
     }
 
-    await prisma[model.userModel].create({
+    const newShare = await prisma[model.userModel].create({
         data: {
             [idKey]: decodedUrl[idKey],
             canEdit: model.canEdit,
             userId: req.userId,
         },
     })
+
+    if (!newShare) {
+        return formatError(500, 'Error joining')
+    }
 
     return res.status(201).send(model.redirect)
 }

@@ -12,8 +12,8 @@ jobs:
                 image: postgres
                 env:
                     POSTGRES_USER: postgres
-                    POSTGRES_PASSWORD: postgres
-                    POSTGRES_DB: mydatabase
+                    POSTGRES_PASSWORD: adnan123
+                    POSTGRES_DB: database
                 ports:
                     - 5432:5432
         steps:
@@ -28,13 +28,17 @@ jobs:
             - name: Install dependencies
               run: npm install
 
+            - name: Run migrations
+              run: npx prisma migrate deploy
+
             - name: Run tests
               env:
-                  DATABASE_URL: 'postgres://postgres:postgres@localhost:5432/mydatabase'
+                  DATABASE_URL: 'postgres://postgres:adnan123@localhost:5432/database'
                   SHADOW_DATABASE_URL: ''
-                  PORT: '5000'
+
+                  PORT: 5000
                   JWT_SECRET: 'secret'
 
-                  AWS_ACCESS_KEY: 'AKIAXRJYITJVGJ7STP4J'
-                  AWS_SECRET_KEY: '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'
+                  AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
+                  AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
               run: npm test
