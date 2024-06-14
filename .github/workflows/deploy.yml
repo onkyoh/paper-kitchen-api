@@ -1,0 +1,34 @@
+name: Deploy
+on:
+    push:
+        paths:
+            - ./prisma/migrations/** # Only run this workflow when migrations are updated
+        branches:
+            - main
+
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repo
+              uses: actions/checkout@v3
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v2
+              with:
+                  node-version: '20.x'
+
+            - name: Install dependencies
+              run: npm install
+
+            - name: Apply all pending migrations to the database
+              run: npx prisma migrate deploy
+              env:
+                  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+                  SHADOW_DATABASE_URL: ${{ secrets.SHADOW_DATABASE_URL }}
+
+                  PORT: 5000
+                  JWT_SECRET: 'secret'
+
+                  AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
+                  AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}

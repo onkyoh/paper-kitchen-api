@@ -1,18 +1,23 @@
+import prisma from '../config/db.js'
+
+import { genSalt, hash, compare } from 'bcrypt'
+
 import formatError from '../util/formatError.js'
+import generateToken from '../util/generateToken.js'
+import decodeUrl from '../util/decodeUrl.js'
+import encodeUrl from '../util/encodeUrl.js'
+
 import {
     createUserSchema,
     emailSchema,
     loginUserSchema,
     passwordSchema,
 } from '../validations/userValidation.js'
-import prisma from '../config/db.js'
-import { genSalt, hash, compare } from 'bcrypt'
-import generateToken from '../util/generateToken.js'
-import ses from '../config/ses.js'
-import decodeUrl from '../util/decodeUrl.js'
-import encodeUrl from '../util/encodeUrl.js'
-import sendAuth from '../emails/emailAuth.js'
-import sendPasswordLink from '../emails/forgotPassword.js'
+
+import {
+    sendPasswordLink,
+    sendAuthentication,
+} from '../services/emailService.js'
 
 export const registerUser = async (req, res) => {
     const { error } = createUserSchema.validate(req.body)
@@ -60,7 +65,7 @@ export const registerUser = async (req, res) => {
             formatError(500, 'Error creating url')
         }
 
-        await sendAuth(url, req.body.email, newUser.username)
+        await sendAuthentication(url, req.body.email, newUser.username)
 
         return res.status(201).send({
             user: {
@@ -131,7 +136,7 @@ export const getUser = async (req, res) => {
             },
         })
     }
-    formatError(500, 'User not found')
+    formatError(404, 'User not found')
 }
 
 export const sendForgotPassword = async (req, res) => {
@@ -239,7 +244,7 @@ export const sendAuthenticationEmail = async (req, res) => {
         formatError(500, 'Error creating url')
     }
 
-    await sendAuth(url, req.body.email, user.username)
+    await sendAuthentication(url, req.body.email, user.username)
     return res.status(200).send('Authentication email sent')
 }
 
