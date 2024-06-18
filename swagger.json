@@ -7,7 +7,7 @@
     },
     "servers": [
         {
-            "url": "https://paperkitchen.adaptable.app/api",
+            "url": "https://api.paperkitchen.ca/api",
             "description": "Production server for PaperKitchen"
         }
     ],
